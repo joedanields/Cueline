@@ -52,6 +52,22 @@
 - 33 proxy tests (all guards, happy path + invalid output for each task, retry, timeout, key
   never in bodies). `git grep GEMINI_API_KEY src/` and the `AIza…` grep both return nothing.
 
+### Phase 4 — AI client + pseudonymization ✅
+- `src/ai/client.ts`: `callAi(task, input, {signal, timeoutMs, cache})` → `Result<T, AiError>`;
+  validates input before sending and output before returning; never throws; friendly message
+  per error kind (`network | timeout | rate_limited | invalid_response | upstream | bad_request | aborted`).
+- `src/ai/cache.ts`: SHA-256 keyed, bounded memory map + sessionStorage; cached values are
+  re-validated on read. Cleared by "Delete all my data".
+- `src/ai/fallbacks.ts`: static intake questions (weather only if outdoor), static checklist map,
+  generic + need-triggered prep tasks.
+- `src/lib/pseudonymize.ts`: name/details split, kinship words kept as context, every name token
+  replaced by that guest's `g_###` id everywhere (longest first), emails and ≥ 7-digit runs masked,
+  `restoreNames` for client-side re-attachment.
+- `src/ai/useAi.ts`: `{status, data, error, run, retry, reset}`, LiveRegion announcements
+  (errors assertive), abort on unmount/supersede.
+- Tests: success, invalid JSON, schema fail, timeout, 429, abort, cache hit (+ tampered cache),
+  and the integration test proving no demo guest name or phone digits appear in the outgoing body.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -77,6 +93,8 @@
 | 3 | `guestLens` output is a flat guest list; household members come back as `g_002a`, `g_002b`… | Gemini response schemas can't express nested optional "members" cleanly; the client groups by id prefix. |
 | 3 | Recovery ops use one flat Gemini object shape (`op` + optional fields); zod's discriminated union enforces the real shape. | Gemini's schema subset has no reliable `oneOf`. |
 | 3 | Requests without an `Origin` header are rejected (403). | SECURITY §2.3; browsers always send Origin on POST, so only scripts are affected. |
+| 4 | `AiError` adds `bad_request` and `aborted` to the documented union. | Invalid input is caught client-side before sending; aborts (unmount/supersede) must not show an error. |
+| 4 | Pseudonymization keeps kinship words ("Nani", "grandpa", "family") and household counts. | They carry the age/role signal Guest Lens needs without identifying anyone. |
 | 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
 
 ## Needs human

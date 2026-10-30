@@ -132,7 +132,7 @@ describe('demo and delete', () => {
 
   it('deletes all data including the AI cache', () => {
     useStore.getState().loadDemo();
-    sessionStorage.setItem('ai-cache', 'x');
+    sessionStorage.setItem('cueline-ai:abc', 'x');
     useStore.getState().deleteAllData();
     const s = useStore.getState();
     expect(s.event).toBeUndefined();

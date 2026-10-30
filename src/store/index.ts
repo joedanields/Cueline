@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { emptyPersistedState, SCHEMA_VERSION } from '../shared/schemas';
 import { buildDemoState } from '../data/demo';
+import { cacheClear } from '../ai/cache';
 import { useToastStore } from './toastStore';
 import { CORRUPT_MESSAGE, STORAGE_KEY, mergePersisted, pickPersisted, safeStorage } from './persistence';
 import type { StoreState } from './types';
@@ -37,11 +38,7 @@ export const useStore = create<StoreState>()(
       deleteAllData: () => {
         set({ ...emptyPersistedState(), event: undefined, runSheet: undefined, versions: [], changeLog: [] });
         useStore.persist.clearStorage();
-        try {
-          sessionStorage.clear(); // AI response cache
-        } catch {
-          // storage blocked — nothing to clear
-        }
+        cacheClear(); // AI responses in memory and sessionStorage
       },
     }),
     {
