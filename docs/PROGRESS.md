@@ -130,6 +130,23 @@
 - Tests: draft conversion/cycles/week grouping, vendor quote → budget source, share-link
   round-trip and tampering, screen flows for all three, axe on each.
 
+### Phase 9 — Run sheet + Live mode (F7, F8) ✅
+- `/runsheet`: draft via `runSheet` AI (helpers sent as "Helper A…", mapped back to ids
+  locally; dangling constraints dropped) or a deterministic fallback with need-based
+  constraints; version saved first. Editor: title, minutes (later segments shift), owner, lock,
+  optional, **Move up / Move down** buttons; violations inline with reason (Problem / Heads-up);
+  constraint list with ✓ Met / ⚠ Misses by N min.
+- `/live` (own lazy chunk, high-contrast `theme-live`, ≥ 24 px text, 56 px targets, sticky
+  bottom controls): Now / Next / countdown, rehearsal clock outside the event window, +5/+10/+15
+  and custom delay, Segment done, Skip. Delay → `settle` → `applyDelay`; no breaks → polite
+  "No conflicts"; breaks → assertive description, deterministic Quick fix shown immediately,
+  `recovery` AI (structure only, no names/owners) re-validated and ranked by the engine,
+  radio group + Apply / Keep / Cancel, result announced and logged in `delayLog`. Offline skips
+  the AI. Countdown announced only on segment change and at ≤ 5 min.
+- Tests: draft mapping, fallback, duration/move edits, break text, recovery input has no
+  owner ids, run-sheet editor + violations, AI draft + fallback, live no-conflict shift, demo
+  "cake 25 min late" with keyboard radio selection, offline Quick fix, segment done, axe.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -165,6 +182,8 @@
 | 8 | Share links are base64url JSON without compression. | `CompressionStream` isn't available in every target/test environment; a card is ~1–2 KB, well within URL limits (decoder caps at 12 000 chars). |
 | 8 | Helper names are replaced by "Helper A/B…" before `helperBrief`. | Same privacy rule as guests: no personal names reach the AI. |
 | 8 | Redrafting prep tasks replaces the list after saving a version. | Simple and reversible via Versions (F9). |
+| 9 | Live mode has a rehearsal clock when "now" is outside the event window. | Lets organizers rehearse and lets the demo show a delay before the real day. |
+| 9 | The Quick fix is computed first and shown while the AI is asked; AI options replace it only if at least one survives engine validation. | Live mode must never wait on the network to offer something safe. |
 | — | Commit author changed to `joedanields <joedanielajd@gmail.com>` (user request); Phases 0–5 history rewritten before any push. | User instruction. |
 | 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
 

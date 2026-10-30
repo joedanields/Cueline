@@ -22,6 +22,8 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       ...jsxA11y.configs.strict.rules,
       'react/no-danger': 'error',
+      // Labels often wrap their control with text in nested elements (radio cards).
+      'jsx-a11y/label-has-associated-control': ['error', { assert: 'either', depth: 3 }],
       // APG: tab panels and scrollable regions may be focusable.
       'jsx-a11y/no-noninteractive-tabindex': ['error', { tags: [], roles: ['tabpanel', 'region'] }],
       'react/jsx-no-target-blank': 'error',
