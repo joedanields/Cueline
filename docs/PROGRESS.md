@@ -83,6 +83,22 @@
 - Tests: logic unit tests, answer → next question, back, skip, fallback, keyboard confirm,
   edit mode, axe in question and summary states.
 
+### Phase 6 — Guest Lens + RSVP (F2, F4) ✅
+- `/guests`: paste (one guest/household per line) or CSV upload (RFC 4180 parser, 200 KB /
+  500 rows caps, header detection) → pseudonymize → `guestLens` → names re-attached locally,
+  households expanded into members sharing a `householdId`, lines the AI skipped kept with
+  low-confidence defaults. "Add without AI" always available; on error Retry is focused.
+- Need-group chips (`aria-pressed`, filter the table), "only show guests to check" filter,
+  editable guest table (real `<table>`, row headers, labelled selects, diet disclosure),
+  "⚠ Check this" text on low-confidence tags + "Looks right", remove, manual add form.
+- RSVP header: confirmed / expected / maybe / no reply / declined, maybe-probability slider,
+  last change + change log. Each RSVP change records and announces its plan delta
+  ("−1 expected → −0.3 kg mains, food budget −₹900") computed by the engine, no AI call.
+- Version snapshot "Imported N guests" on every import.
+- Tests: CSV/paste parsing, household expansion, delta text, screen flows (loading announced,
+  names absent from the request, groups render, fix low-confidence tag, AI failure path, RSVP
+  delta, keyboard edits), axe empty + demo.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -113,6 +129,9 @@
 | 5 | The AI chooses *which* question and its wording; the field decides the input control. | Enum answers (venue, meals) can't drift from the schema; AI options are only used for free-form fields (weather backup, kids' ages). |
 | 5 | Rough guest count, kids' ages and weather backup are kept in `event.notes`. | They have no field in `EventSchema`; notes keep them visible without a data-model change. |
 | 5 | Re-confirming the event re-allocates estimate lines only if the total, currency or weights changed. | Avoids discarding manual estimate edits on unrelated changes; quotes/confirmed are never touched. |
+| 6 | Household members are named "Raman family · child 1" etc. | The AI never returns names; members stay identifiable and editable. |
+| 6 | Tags the AI omits a confidence for count as "medium" (not flagged); guests added without AI have every tag flagged "low". | Flags only what is genuinely uncertain. |
+| — | Commit author changed to `joedanields <joedanielajd@gmail.com>` (user request); Phases 0–5 history rewritten before any push. | User instruction. |
 | 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
 
 ## Needs human

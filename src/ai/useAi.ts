@@ -8,8 +8,8 @@ export type AiStatus = 'idle' | 'loading' | 'success' | 'error';
 type Messages<T extends AiTaskName> = {
   /** Announced when the request starts, e.g. "Analysing guest list…". */
   loading: string;
-  /** Announced on success, e.g. "Found 6 need groups". */
-  success: (data: AiOutput<T>) => string;
+  /** Announced on success, e.g. "Found 6 need groups"; null when the caller announces itself. */
+  success: (data: AiOutput<T>) => string | null;
 };
 
 /**
@@ -42,7 +42,8 @@ export function useAi<T extends AiTaskName>(task: T, messages: Messages<T>) {
       if (result.ok) {
         setData(result.data);
         setStatus('success');
-        announce(messagesRef.current.success(result.data));
+        const message = messagesRef.current.success(result.data);
+        if (message) announce(message);
         return result.data;
       }
       setError(result.error);
