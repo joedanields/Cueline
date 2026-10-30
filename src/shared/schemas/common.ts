@@ -27,5 +27,6 @@ export const LIMITS = {
   constraints: 60,
   delayLog: 200,
   checklist: 150,
+  menu: 60,
   versions: 20,
 } as const;

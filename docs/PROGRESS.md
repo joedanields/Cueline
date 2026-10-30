@@ -25,6 +25,18 @@
   budget, 12 prep tasks, run sheet with the seniors' lunch constraint), dated relative to `now`.
 - Home screen: Load demo, two-step "Delete all my data" (clears localStorage + sessionStorage).
 
+### Phase 2 — Engine ✅
+- Pure modules in `src/engine/`: `constants`, `rsvp`, `quantities`, `menuCoverage`, `seating`,
+  `budget`, `needs` (need groups, anonymous need summary, deterministic checklist triggers),
+  `schedule` (DFS topo order with cycle reporting, backward pass, forward pass for slips/late
+  prereqs, slack-based critical path), `doNext`, `runSheet` (constraint evaluation for all 4
+  kinds, validation), `liveShift` (`settle`, `applyDelay`, `liveState`, `advance`),
+  `recoveryOps` + `recovery` (op checks, apply, score/rank per DATA_MODEL formula,
+  deterministic "Quick fix"), `ics` (RFC 5545 escaping + line folding).
+- Every exported function has a JSDoc with an example; time is always injected.
+- Memoized selectors in `src/store/selectors.ts` (`memoLast` on input identity).
+- Coverage: engine 100 % lines / 92 % branches. 200-guest full recompute well under 50 ms.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -40,6 +52,13 @@
 | 1 | Added `.max()` bounds to every persisted array/string. | Bounded validation cost; mitigates oversized-input memory exhaustion. |
 | 1 | A budget line with `perGuest: true` stores the **per-guest unit amount**; total = unit × expected headcount (engine). | DATA_MODEL: such lines "scale with expected headcount". |
 | 1 | axe in jsdom runs with `color-contrast` disabled (`tests/axe.ts`). | jsdom has no canvas; contrast is guaranteed by the documented tokens and checked with Lighthouse. |
+| 2 | **Data model addition:** `menu: Dish[]` (`DishSchema`: id, name, course, suitableFor) on `PersistedStateSchema`, default `[]`. | PRD F3 needs a menu-coverage matrix, but DATA_MODEL had no dish shape. Default keeps old saves valid. DATA_MODEL.md updated. |
+| 2 | "Invited" (no reply) counts as attending (weight 1); "maybe" uses `maybeProbability`; "no" = 0. | Organizers cater for everyone not yet declined; avoids under-catering before RSVPs arrive. |
+| 2 | Coverage counts mains only; vegan ⇒ vegetarian + dairy-free; jain ⇒ vegetarian; "other" diet excluded. | TESTING.md rules; "other" can't be matched to dishes. |
+| 2 | Budget categories map to weights: venue/rentals ← comfort, others ← same-named weight; 5 % contingency off the top; largest-remainder split. | Exact integer sums, weight 0 ⇒ 0 estimate. |
+| 2 | Live delay: upcoming unlocked segments shift; the live segment runs long by the delay; `settle(now)` marks past segments done first. | Keeps recovery from touching segments that already happened. |
+| 2 | Constraints on skipped segments no longer apply, so recovery may never drop a segment that carries a hard constraint. | Prevents "fix seniors' lunch by dropping lunch". |
+| 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
 
 ## Needs human
 - (none yet)

@@ -7,3 +7,4 @@ export * from './helper';
 export * from './task';
 export * from './runsheet';
 export * from './persisted';
+export * from './menu';

@@ -7,6 +7,7 @@ import { VendorSchema } from './vendor';
 import { HelperSchema } from './helper';
 import { PrepTaskSchema } from './task';
 import { RunSheetSchema } from './runsheet';
+import { DishSchema } from './menu';
 
 export const SCHEMA_VERSION = 1 as const;
 
@@ -30,6 +31,7 @@ export const PersistedStateSchema = z.object({
   checklist: z.array(ChecklistItemSchema).max(LIMITS.checklist),
   maybeProbability: z.number().min(0).max(1).default(0.5),
   quantityOverrides: z.record(z.string().max(60), z.number().min(0).max(1_000_000)).default({}),
+  menu: z.array(DishSchema).max(LIMITS.menu).default([]),
 });
 export type PersistedState = z.infer<typeof PersistedStateSchema>;
 
@@ -55,5 +57,6 @@ export function emptyPersistedState(): PersistedState {
     checklist: [],
     maybeProbability: 0.5,
     quantityOverrides: {},
+    menu: [],
   };
 }

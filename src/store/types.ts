@@ -2,6 +2,7 @@ import type { StateCreator } from 'zustand';
 import type {
   BudgetLine,
   CelebrationEvent,
+  Dish,
   ChecklistItem,
   Guest,
   Helper,
@@ -20,9 +21,12 @@ export type PlanSlice = {
   event?: CelebrationEvent;
   maybeProbability: number;
   quantityOverrides: Record<string, number>;
+  menu: Dish[];
   setEvent: (event: CelebrationEvent) => void;
   setMaybeProbability: (p: number) => void;
   setQuantityOverride: (item: string, amount: number | undefined) => void;
+  upsertDish: (dish: Dish) => void;
+  removeDish: (id: string) => void;
 };
 
 export type GuestSlice = {

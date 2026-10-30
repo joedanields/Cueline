@@ -160,6 +160,14 @@ export const RecoveryOptionSchema = z.object({
   ops: z.array(RecoveryOpSchema).min(1).max(6),
 });
 
+// ---------- Menu (added in build Phase 2 for the coverage matrix, PRD F3) ----------
+export const DishSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(80),
+  course: z.enum(['main', 'side', 'dessert', 'snack']),
+  suitableFor: z.array(Dietary),   // vegan ⇒ vegetarian & dairy_free, jain ⇒ vegetarian (engine)
+});
+
 // ---------- Versions ----------
 export const VersionSchema = z.object({
   id: z.string(), at: z.string().datetime(), reason: z.string().max(80),
@@ -179,7 +187,10 @@ export const PersistedStateSchema = z.object({
   checklist: z.array(z.object({ id: z.string(), text: z.string(), trigger: z.string(), done: z.boolean() })),
   maybeProbability: z.number().min(0).max(1).default(0.5),
   quantityOverrides: z.record(z.string(), z.number()).default({}),
+  menu: z.array(DishSchema).default([]),
 });
+// Version history is stored next to the plan as `versions: Version[]` (max 20) and validated
+// with its own schema on load; snapshots are re-validated with PersistedStateSchema on restore.
 ```
 
 ## Engine outputs (derived, never persisted)

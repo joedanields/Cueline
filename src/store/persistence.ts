@@ -34,6 +34,7 @@ export function pickPersisted(s: StoreState): PersistedState {
     checklist: s.checklist,
     maybeProbability: s.maybeProbability,
     quantityOverrides: s.quantityOverrides,
+    menu: s.menu,
   };
 }
 

@@ -2,6 +2,7 @@ import { addDays, addHours, setHours, startOfDay } from 'date-fns';
 import {
   SCHEMA_VERSION,
   type BudgetLine,
+  type Dish,
   type Helper,
   type PersistedState,
   type PrepTask,
@@ -15,6 +16,16 @@ const START_HOUR = 12;
 const DURATION_HOURS = 4;
 const INR = 'INR';
 const rupees = (n: number) => ({ amount: n * 100, currency: INR });
+
+// Deliberately only one diabetic-friendly main, so the coverage matrix shows a gap to fix.
+const MENU: Dish[] = [
+  { id: 'd_paneer', name: 'Paneer butter masala', course: 'main', suitableFor: ['vegetarian', 'gluten_free'] },
+  { id: 'd_dal', name: 'Dal tadka', course: 'main', suitableFor: ['vegan', 'gluten_free', 'diabetic_friendly', 'nut_allergy', 'soft_food'] },
+  { id: 'd_chicken', name: 'Chicken curry', course: 'main', suitableFor: ['gluten_free', 'nut_allergy'] },
+  { id: 'd_pulao', name: 'Vegetable pulao', course: 'main', suitableFor: ['vegan'] },
+  { id: 'd_khichdi', name: 'Soft moong khichdi', course: 'main', suitableFor: ['vegetarian', 'soft_food'] },
+  { id: 'd_cake', name: 'Eggless birthday cake', course: 'dessert', suitableFor: ['vegetarian'] },
+];
 
 const HELPERS: Helper[] = [
   { id: 'h_priya', name: 'Priya' },
@@ -128,5 +139,6 @@ export function buildDemoState(now: Date): PersistedState {
     checklist: [],
     maybeProbability: 0.5,
     quantityOverrides: {},
+    menu: MENU,
   };
 }
