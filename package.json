@@ -1,0 +1,58 @@
+{
+  "name": "cueline",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Guest-first celebration planner: guests in, cues out.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "dev:full": "wrangler pages dev -- npm run dev",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "date-fns": "4.1.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router": "7.18.4",
+    "zod": "4.6.7",
+    "zustand": "5.0.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.29.0",
+    "@testing-library/dom": "10.4.0",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.3.0",
+    "@testing-library/user-event": "14.6.1",
+    "@types/node": "22.15.32",
+    "@types/react": "18.3.23",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "4.5.2",
+    "@vitest/coverage-v8": "3.2.7",
+    "autoprefixer": "10.4.21",
+    "eslint": "9.29.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "globals": "16.2.0",
+    "jsdom": "26.1.0",
+    "postcss": "8.5.6",
+    "prettier": "3.5.3",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.34.1",
+    "vite": "6.4.4",
+    "vitest": "3.2.7",
+    "vitest-axe": "0.1.0",
+    "wrangler": "4.20.0"
+  }
+}

@@ -1,0 +1,3 @@
+GEMINI_API_KEY=replace-me
+GEMINI_MODEL=replace-with-current-flash-model
+ALLOWED_ORIGINS=http://localhost:8788

@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Colour tokens as space-separated RGB so Tailwind can apply alpha. */
+:root {
+  --c-bg: 255 255 255;
+  --c-surface: 241 245 249;
+  --c-fg: 15 23 42;
+  --c-muted: 71 85 105;
+  --c-line: 100 116 139;
+  --c-accent: 55 48 163;
+  --c-accent-fg: 255 255 255;
+  --c-focus: 29 78 216;
+  --c-ok: 21 101 52;
+  --c-warn: 146 64 14;
+  --c-danger: 185 28 28;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-bg: 15 23 42;
+    --c-surface: 30 41 59;
+    --c-fg: 241 245 249;
+    --c-muted: 203 213 225;
+    --c-line: 148 163 184;
+    --c-accent: 165 180 252;
+    --c-accent-fg: 15 23 42;
+    --c-focus: 251 191 36;
+    --c-ok: 134 239 172;
+    --c-warn: 252 211 77;
+    --c-danger: 252 165 165;
+    color-scheme: dark;
+  }
+}
+
+/* Live mode is high-contrast by default regardless of the OS theme. */
+.theme-live {
+  --c-bg: 0 0 0;
+  --c-surface: 23 23 23;
+  --c-fg: 255 255 255;
+  --c-muted: 229 229 229;
+  --c-line: 212 212 212;
+  --c-accent: 253 224 71;
+  --c-accent-fg: 0 0 0;
+  --c-focus: 253 224 71;
+  --c-ok: 134 239 172;
+  --c-warn: 253 224 71;
+  --c-danger: 252 165 165;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-bg text-fg font-sans antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-focus));
+    outline-offset: 2px;
+  }
+  h1 {
+    @apply text-2xl font-bold;
+  }
+  h2 {
+    @apply text-xl font-semibold;
+  }
+  h3 {
+    @apply text-lg font-semibold;
+  }
+}
+
+@layer components {
+  .sr-only-focusable:not(:focus) {
+    @apply sr-only;
+  }
+  .card {
+    @apply rounded-lg border border-line/40 bg-surface p-4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  :root {
+    --c-bg: 255 255 255;
+    --c-surface: 255 255 255;
+    --c-fg: 0 0 0;
+    --c-muted: 0 0 0;
+    --c-line: 0 0 0;
+  }
+  body {
+    font-size: 12pt;
+    background: #fff;
+    color: #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-break {
+    break-after: page;
+  }
+}
