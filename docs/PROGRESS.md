@@ -114,6 +114,22 @@
 - Tests: tabs keyboard, live recompute on RSVP change, override, coverage gap closes, step-free
   seating, checklist AI + fallback, budget edit + re-split keeps confirmed lines, axe on every tab.
 
+### Phase 8 — Timeline, vendors, helpers (F5, F6) ✅
+- `/timeline`: Do-next card (top 3), "Draft prep tasks" via `prepTasks` (anonymous need
+  counts only; version snapshot before replacing; generic + need-triggered fallback), drafts
+  converted by `draftsToTasks` (keys → ids, unknown deps dropped, cycles broken), tasks grouped
+  by week relative to the event, badges (✓ Done, ⚠ At risk, ⏸ Blocked, ★ Critical path,
+  ↷ Slipped, ♿ For: need), owner select, mark done / slip by 1–7 days, announcements.
+- `/vendors`: add vendors, AI-suggested questions driven by guest needs (merged without
+  duplicates, answers editable), quote log; the linked budget line becomes Quote, or Confirmed
+  when a quote is accepted (`lineForVendor`). No price or availability is ever assumed.
+- `/helpers`: roster with optional phone/availability, assignment counts, `helperBrief` sent with
+  the pseudonymous label "Helper A" (name restored locally), editable brief, cue card, read-only
+  share link `/card#…` (base64url JSON in the fragment, only that helper's data, zod-validated on
+  open, size-capped), printable card route with Print button.
+- Tests: draft conversion/cycles/week grouping, vendor quote → budget source, share-link
+  round-trip and tampering, screen flows for all three, axe on each.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -146,6 +162,9 @@
 | 5 | Re-confirming the event re-allocates estimate lines only if the total, currency or weights changed. | Avoids discarding manual estimate edits on unrelated changes; quotes/confirmed are never touched. |
 | 6 | Household members are named "Raman family · child 1" etc. | The AI never returns names; members stay identifiable and editable. |
 | 6 | Tags the AI omits a confidence for count as "medium" (not flagged); guests added without AI have every tag flagged "low". | Flags only what is genuinely uncertain. |
+| 8 | Share links are base64url JSON without compression. | `CompressionStream` isn't available in every target/test environment; a card is ~1–2 KB, well within URL limits (decoder caps at 12 000 chars). |
+| 8 | Helper names are replaced by "Helper A/B…" before `helperBrief`. | Same privacy rule as guests: no personal names reach the AI. |
+| 8 | Redrafting prep tasks replaces the list after saving a version. | Simple and reversible via Versions (F9). |
 | — | Commit author changed to `joedanields <joedanielajd@gmail.com>` (user request); Phases 0–5 history rewritten before any push. | User instruction. |
 | 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
 
