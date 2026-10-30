@@ -1,0 +1,9 @@
+{ "guests": [
+  { "id": "g_001", "ageBand": "senior", "dietary": ["diabetic_friendly"], "mobility": "limited_walking", "sensory": "none",
+    "travel": "local", "role": "honoree", "note": "Birthday honoree, uses a walker",
+    "confidence": { "ageBand": "high", "dietary": "high", "mobility": "high", "sensory": "low", "travel": "low", "role": "high" } },
+  { "id": "g_002a", "ageBand": "adult", "dietary": ["vegetarian"], "mobility": "none", "sensory": "none",
+    "travel": "local", "role": "guest", "note": "Parent", "confidence": { "ageBand": "medium", "dietary": "high" } },
+  { "id": "g_002b", "ageBand": "child", "dietary": ["vegetarian"], "mobility": "stroller", "sensory": "none",
+    "travel": "local", "role": "guest", "note": "Child under 6", "confidence": { "ageBand": "high" } }
+], "assumptions": ["Household of 4 split into members"] }

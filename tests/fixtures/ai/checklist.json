@@ -1,0 +1,5 @@
+{ "items": [
+  { "trigger": "mobility:wheelchair", "text": "Confirm a step-free route from parking to seating" },
+  { "trigger": "mobility:wheelchair", "text": "Check the accessible restroom door width" },
+  { "trigger": "venue:outdoor", "text": "Reserve the indoor backup hall in case of rain" }
+] }

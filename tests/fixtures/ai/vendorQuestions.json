@@ -1,0 +1,4 @@
+{ "questions": [
+  { "text": "Can you provide 3 diabetic-friendly dessert portions?", "why": "3 guests are diabetic" },
+  { "text": "Is the serving area step-free from the guest seating?", "why": "2 wheelchair users" }
+] }

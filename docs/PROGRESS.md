@@ -37,6 +37,21 @@
 - Memoized selectors in `src/store/selectors.ts` (`memoLast` on input identity).
 - Coverage: engine 100 % lines / 92 % branches. 200-guest full recompute well under 50 ms.
 
+### Phase 3 — AI proxy ✅
+- `functions/api/ai.ts` (`onRequest`: 405 for non-POST with `Allow`), guards in `_lib/guard.ts`
+  (content-type 415 → origin allowlist + same-origin 403, missing Origin rejected → per-IP token
+  bucket 20/min with LRU cap 429 → 32 KB cap on declared length and streamed bytes 413), zod
+  envelope + per-task input validation 400.
+- Task registry for all 9 tasks (`_lib/tasks.ts`), prompts built server-side only
+  (`_lib/prompts.ts`: shared preamble, `<user_data>` fencing with `& < >` escaping), Gemini
+  `responseSchema` per task (`_lib/geminiSchemas.ts`), REST call with timeout (15 s, 8 s for
+  recovery), one retry on 5xx/429 with jitter, never on 4xx, generic error codes only,
+  output zod validation (502 `invalid_response`), `Cache-Control: no-store`.
+- Contracts shared with the browser in `src/shared/aiTasks.ts`; fixtures for every task in
+  `tests/fixtures/ai/` (valid + invalid).
+- 33 proxy tests (all guards, happy path + invalid output for each task, retry, timeout, key
+  never in bodies). `git grep GEMINI_API_KEY src/` and the `AIza…` grep both return nothing.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -58,10 +73,18 @@
 | 2 | Budget categories map to weights: venue/rentals ← comfort, others ← same-named weight; 5 % contingency off the top; largest-remainder split. | Exact integer sums, weight 0 ⇒ 0 estimate. |
 | 2 | Live delay: upcoming unlocked segments shift; the live segment runs long by the delay; `settle(now)` marks past segments done first. | Keeps recovery from touching segments that already happened. |
 | 2 | Constraints on skipped segments no longer apply, so recovery may never drop a segment that carries a hard constraint. | Prevents "fix seniors' lunch by dropping lunch". |
+| 3 | Proxy tests live in `tests/functions/` rather than next to `functions/api/ai.ts`. | Anything under `functions/` is scanned by the Pages Functions bundler; keeping vitest imports out avoids breaking the deploy build. |
+| 3 | `guestLens` output is a flat guest list; household members come back as `g_002a`, `g_002b`… | Gemini response schemas can't express nested optional "members" cleanly; the client groups by id prefix. |
+| 3 | Recovery ops use one flat Gemini object shape (`op` + optional fields); zod's discriminated union enforces the real shape. | Gemini's schema subset has no reliable `oneOf`. |
+| 3 | Requests without an `Origin` header are rejected (403). | SECURITY §2.3; browsers always send Origin on POST, so only scripts are affected. |
 | 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
 
 ## Needs human
-- (none yet)
+- **Phase 3 manual check:** put a real key in `.dev.vars` (copy `.dev.vars.example`; set
+  `GEMINI_MODEL` to a current Gemini flash model id), run `npm run dev:full`, then
+  `curl -X POST http://localhost:8788/api/ai -H "content-type: application/json" -H "Origin: http://localhost:8788" -d '{"task":"checklist","input":{"triggers":["mobility:wheelchair"],"venueType":"hall","outdoor":false}}'`.
+  All proxy behaviour is covered by mocked tests; real Gemini output against the response
+  schemas is unverified until this runs.
 
 ## Open issues
 - (none yet)
