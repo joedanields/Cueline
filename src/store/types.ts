@@ -82,6 +82,8 @@ export type VersionSlice = {
 };
 
 export type RootActions = {
+  /** Save intake answers; (re)allocates estimate budget lines when the total or weights change. */
+  confirmEvent: (event: CelebrationEvent) => void;
   loadDemo: () => void;
   deleteAllData: () => void;
   replaceState: (state: PersistedState) => void;

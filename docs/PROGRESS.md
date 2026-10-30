@@ -68,6 +68,21 @@
 - Tests: success, invalid JSON, schema fail, timeout, 429, abort, cache hit (+ tampered cache),
   and the integration test proving no demo guest name or phone digits appear in the outgoing body.
 
+### Phase 5 — Intake (F1) ✅
+- `/intake`: one question at a time driven by `intakeNext`; on AI failure the static list takes
+  over for the session (with a visible notice). When the AI says "done", missing required fields
+  are still asked from the static list. Max 8 questions. Back, Skip, "Skip to the summary".
+- Renderers per field (`FieldInput`): enum fields (venue, meals) always use fixed options; AI
+  wording is used for the question text and "why". Native range sliders for the 5 weights with
+  `aria-valuetext`.
+- Summary card: every answer editable, error summary (role=alert, focused), confirm →
+  `confirmEvent` store action (sets event, allocates estimate budget lines via `engine/budget`
+  when the total or weights change, snapshots a version). Existing events open in the summary.
+- New UI primitives: `Field` (label/hint/error wired with `aria-describedby`), `ChoiceGroup`,
+  `WeightSliders`, `Button` (`aria-busy`, text busy label).
+- Tests: logic unit tests, answer → next question, back, skip, fallback, keyboard confirm,
+  edit mode, axe in question and summary states.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -95,6 +110,9 @@
 | 3 | Requests without an `Origin` header are rejected (403). | SECURITY §2.3; browsers always send Origin on POST, so only scripts are affected. |
 | 4 | `AiError` adds `bad_request` and `aborted` to the documented union. | Invalid input is caught client-side before sending; aborts (unmount/supersede) must not show an error. |
 | 4 | Pseudonymization keeps kinship words ("Nani", "grandpa", "family") and household counts. | They carry the age/role signal Guest Lens needs without identifying anyone. |
+| 5 | The AI chooses *which* question and its wording; the field decides the input control. | Enum answers (venue, meals) can't drift from the schema; AI options are only used for free-form fields (weather backup, kids' ages). |
+| 5 | Rough guest count, kids' ages and weather backup are kept in `event.notes`. | They have no field in `EventSchema`; notes keep them visible without a data-model change. |
+| 5 | Re-confirming the event re-allocates estimate lines only if the total, currency or weights changed. | Avoids discarding manual estimate edits on unrelated changes; quotes/confirmed are never touched. |
 | 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
 
 ## Needs human

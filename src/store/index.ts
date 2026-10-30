@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import { emptyPersistedState, SCHEMA_VERSION } from '../shared/schemas';
 import { buildDemoState } from '../data/demo';
 import { cacheClear } from '../ai/cache';
+import { allocateBudget } from '../engine/budget';
+import { computeHeadcount } from '../engine/rsvp';
 import { useToastStore } from './toastStore';
 import { CORRUPT_MESSAGE, STORAGE_KEY, mergePersisted, pickPersisted, safeStorage } from './persistence';
 import type { StoreState } from './types';
@@ -30,6 +32,14 @@ export const useStore = create<StoreState>()(
       ...createRunSheetSlice(set, get, api),
       ...createChecklistSlice(set, get, api),
       ...createVersionSlice(set, get, api),
+      confirmEvent: (event) => {
+        const { event: prev, budget, guests, maybeProbability } = get();
+        const changed = !prev || prev.budget.amount !== event.budget.amount || prev.budget.currency !== event.budget.currency ||
+          JSON.stringify(prev.weights) !== JSON.stringify(event.weights);
+        const expected = computeHeadcount(guests, maybeProbability).expected;
+        set({ event, budget: changed || budget.length === 0 ? allocateBudget(event.budget, event.weights, budget, expected) : budget });
+        get().snapshot('Event details confirmed');
+      },
       replaceState: (state) => set({ ...emptyPersistedState(), ...state, changeLog: [] }),
       loadDemo: () => {
         get().replaceState(buildDemoState(new Date()));
