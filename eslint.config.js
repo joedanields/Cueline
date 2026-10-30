@@ -22,6 +22,8 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       ...jsxA11y.configs.strict.rules,
       'react/no-danger': 'error',
+      // APG: tab panels and scrollable regions may be focusable.
+      'jsx-a11y/no-noninteractive-tabindex': ['error', { tags: [], roles: ['tabpanel', 'region'] }],
       'react/jsx-no-target-blank': 'error',
       'no-eval': 'error',
       'no-implied-eval': 'error',

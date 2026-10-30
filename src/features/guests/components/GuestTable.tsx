@@ -25,7 +25,6 @@ export function GuestTable({ guests, caption }: { guests: Guest[]; caption: stri
   if (guests.length === 0) return <p className="text-muted">No guests match.</p>;
   return (
     // Focusable so keyboard users can scroll the wide table horizontally.
-    // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
     <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Guest table, scrolls sideways">
       <table className="w-full min-w-[60rem] text-left">
         <caption className="sr-only">{caption}</caption>

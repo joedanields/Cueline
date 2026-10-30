@@ -84,6 +84,8 @@ export type VersionSlice = {
 export type RootActions = {
   /** Save intake answers; (re)allocates estimate budget lines when the total or weights change. */
   confirmEvent: (event: CelebrationEvent) => void;
+  /** Re-split estimate lines by priority weights; quotes and confirmed costs are kept. */
+  reallocateBudget: () => void;
   loadDemo: () => void;
   deleteAllData: () => void;
   replaceState: (state: PersistedState) => void;

@@ -99,6 +99,21 @@
   names absent from the request, groups render, fix low-confidence tag, AI failure path, RSVP
   delta, keyboard edits), axe empty + demo.
 
+### Phase 7 — Plan view (F3) ✅
+- `/plan` with WAI-ARIA `Tabs` (arrow keys, Home/End, roving tabindex):
+  - **Quantities**: table with amount, human-readable basis, per-line override + "Use calculated".
+  - **Menu coverage**: matrix per dietary group (✓ Covered / ⚠ Gap: add N more) and a dish editor.
+  - **Seating**: zones with reasons, tables ≤ 8 and who sits where.
+  - **Accessibility**: triggers decided by the engine; `checklist` AI writes wording only for
+    those triggers (invented triggers are dropped), static fallback wording, done ticks kept on
+    rewrite, "Draft — edit freely" label, stale items marked "No longer needed".
+  - **Budget**: total / planned / remaining (or ⚠ over) / per guest, category table with source
+    badges, editable lines (label, category, amount committed on blur, per-guest, source), add
+    line, "Re-split estimates by priorities" (`reallocateBudget` store action).
+- `Badge` / `SourceBadge` (icon + word, never colour alone).
+- Tests: tabs keyboard, live recompute on RSVP change, override, coverage gap closes, step-free
+  seating, checklist AI + fallback, budget edit + re-split keeps confirmed lines, axe on every tab.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|

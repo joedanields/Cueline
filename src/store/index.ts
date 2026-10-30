@@ -40,6 +40,11 @@ export const useStore = create<StoreState>()(
         set({ event, budget: changed || budget.length === 0 ? allocateBudget(event.budget, event.weights, budget, expected) : budget });
         get().snapshot('Event details confirmed');
       },
+      reallocateBudget: () => {
+        const { event, budget, guests, maybeProbability } = get();
+        if (!event) return;
+        set({ budget: allocateBudget(event.budget, event.weights, budget, computeHeadcount(guests, maybeProbability).expected) });
+      },
       replaceState: (state) => set({ ...emptyPersistedState(), ...state, changeLog: [] }),
       loadDemo: () => {
         get().replaceState(buildDemoState(new Date()));
