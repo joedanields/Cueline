@@ -52,6 +52,7 @@ export function useLiveControl(now: number) {
     if (!pending) return;
     const segments = option ? option.segments : pending.segments;
     commit(segments, pending.delay, option ? `Running ${pending.delay} min late — ${option.label}` : `Running ${pending.delay} min late — kept as is`);
+    useStore.getState().snapshot(option ? `Recovery applied: ${option.label}` : `Delay of ${pending.delay} min applied`);
     const startsAt = useStore.getState().event?.startsAt ?? '';
     const next = segments.filter((s) => s.status === 'upcoming').sort((a, b) => a.offsetMin - b.offsetMin)[0];
     announce(`${option ? `Applied: ${option.label}.` : 'Delay applied without changes.'}${next ? ` Next: ${next.title} at ${clock(startsAt, next.offsetMin)}.` : ''} Cue cards updated.`, 'assertive');

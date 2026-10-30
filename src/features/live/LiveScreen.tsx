@@ -10,6 +10,7 @@ import { clock } from './liveLogic';
 import { useLiveClock } from './useLiveClock';
 import { useLiveControl } from './useLiveControl';
 import { RecoveryOptions } from './components/RecoveryOptions';
+import { useKeyShortcut } from '../../lib/useShortcuts';
 
 const BIG = 'min-h-[56px] rounded border-2 px-4 text-xl font-bold';
 const DELAYS = [5, 10, 15];
@@ -26,6 +27,13 @@ export default function LiveScreen() {
   const state = useMemo(() => liveState(settle(runSheet?.segments ?? [], now), now), [runSheet, now]);
   const owner = (id?: string) => (id === 'organizer' ? 'You' : helpers.find((h) => h.id === id)?.name ?? 'Unassigned');
   const announced = useRef({ id: '', soon: false });
+  const [confirmDelay, setConfirmDelay] = useState(false);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+  useKeyShortcut('d', () => setConfirmDelay(true));
+  useKeyShortcut('n', () => state.current && control.mark(state.current.id, 'done'));
+  useEffect(() => {
+    if (confirmDelay) confirmRef.current?.focus();
+  }, [confirmDelay]);
 
   // Announce segment changes and the ≤ 5-minute mark only — never every tick.
   useEffect(() => {
@@ -72,6 +80,13 @@ export default function LiveScreen() {
           <RecoveryOptions pending={control.pending} onApply={control.apply} onCancel={control.cancel} />
         ) : (
           <div className="sticky bottom-0 space-y-3 bg-bg py-2" role="group" aria-label="Live controls">
+            {confirmDelay ? (
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Confirm 5 minute delay">
+                <span>Add 5 minutes to the schedule?</span>
+                <button ref={confirmRef} type="button" className={`${BIG} border-warn`} onClick={() => { setConfirmDelay(false); void control.delay(5); }}>Confirm +5</button>
+                <button type="button" className={`${BIG} border-line`} onClick={() => setConfirmDelay(false)}>Cancel</button>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
               {DELAYS.map((d) => <button key={d} type="button" className={`${BIG} border-warn`} onClick={() => void control.delay(d)}>Running late +{d}</button>)}
             </div>

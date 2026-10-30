@@ -19,6 +19,9 @@ export const ROUTES: AppRoute[] = [
   { path: '/runsheet', label: 'Run sheet', inNav: true, Component: lazy(() => import('./features/runsheet/RunSheetScreen')) },
   // Live mode is its own chunk so the planning screens never load it.
   { path: '/live', label: 'Live', inNav: true, Component: lazy(() => import('./features/live/LiveScreen')) },
+  { path: '/versions', label: 'Versions', inNav: true, Component: lazy(() => import('./features/versions/VersionsScreen')) },
+  { path: '/export', label: 'Export', inNav: true, Component: lazy(() => import('./features/export/ExportScreen')) },
+  { path: '/print/:kind', label: 'Print', inNav: false, Component: lazy(() => import('./features/export/PrintScreen')) },
   { path: '/card', label: 'Cue card', inNav: false, Component: lazy(() => import('./features/helpers/HelperCardScreen')) },
 ];
 

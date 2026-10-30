@@ -147,6 +147,22 @@
   owner ids, run-sheet editor + violations, AI draft + fallback, live no-conflict shift, demo
   "cake 25 min late" with keyboard radio selection, offline Quick fix, segment done, axe.
 
+### Phase 10 — Versions, messages, export ✅
+- `/versions`: newest-first list with time + reason, "Save a version now", two-step restore
+  (focus moves to "Yes, restore"), current plan snapshotted before restoring, invalid snapshots
+  refused with an alert. Applying a live recovery now also snapshots (F9).
+- `/export`: invitations per need group (`invites` AI gets code-chosen group specifics and
+  `{date}`/`{time}` placeholders, filled locally; template fallback; editable draft; copy),
+  printable views `/print/runsheet|cues|cards`, `.ics` of open prep deadlines, guest-list CSV
+  with formula-injection neutralised (`lib/csv.ts`). Files are generated in the browser.
+- Keyboard shortcuts dialog (`?`), `g` then `g/r/t/l` navigation, Live `d` (+5 with in-page
+  confirmation) and `n` (segment done). Never fire while typing or inside a dialog; can be
+  turned off (persisted per viewer). Accessible modal `Dialog` (labelled, focus trap, Esc,
+  focus return).
+- Tests: CSV injection, placeholders, restore + corrupt restore, invites + fallback (no names
+  sent), downloads, print views, dialog focus/escape/axe, shortcut navigation, typing/off
+  guards, Live `d`/`n`.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -184,6 +200,8 @@
 | 8 | Redrafting prep tasks replaces the list after saving a version. | Simple and reversible via Versions (F9). |
 | 9 | Live mode has a rehearsal clock when "now" is outside the event window. | Lets organizers rehearse and lets the demo show a delay before the real day. |
 | 9 | The Quick fix is computed first and shown while the AI is asked; AI options replace it only if at least one survives engine validation. | Live mode must never wait on the network to offer something safe. |
+| 10 | Printing uses dedicated routes (`/print/:kind`) plus the browser print dialog, with `no-print` on app chrome. | Clean documents without hidden-section tricks; "Save as PDF" works the same. |
+| 10 | Added a guest-list CSV export. | SECURITY §4 requires formula stripping on export; gives organizers a backup outside the browser. |
 | — | Commit author changed to `joedanields <joedanielajd@gmail.com>` (user request); Phases 0–5 history rewritten before any push. | User instruction. |
 | 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
 
