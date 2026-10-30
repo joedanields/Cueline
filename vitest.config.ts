@@ -8,6 +8,8 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}', 'functions/**/*.test.ts', 'tests/**/*.test.{ts,tsx}'],
     restoreMocks: true,
+    // Screens with the 62-guest demo are slow under coverage instrumentation.
+    testTimeout: 15_000,
     unstubGlobals: true,
     coverage: {
       provider: 'v8',

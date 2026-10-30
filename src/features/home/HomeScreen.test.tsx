@@ -32,6 +32,15 @@ describe('HomeScreen', () => {
     expect(screen.getByTestId('live-polite')).toHaveTextContent(/deleted/i);
   });
 
+  it('shows progress through every stage with text status', async () => {
+    useStore.getState().loadDemo();
+    renderApp('/');
+    const steps = await screen.findByRole('region', { name: /step by step/i });
+    expect(steps).toHaveTextContent(/Event details.*Done.*Grandpa’s 75th/);
+    expect(steps).toHaveTextContent(/Plan.*To do.*1 menu gap to fix/);
+    expect(steps).toHaveTextContent(/2 of 12 tasks done/);
+  });
+
   it('has no axe violations in empty and confirming states', async () => {
     const { container } = renderApp('/');
     await screen.findByRole('heading', { level: 1 });

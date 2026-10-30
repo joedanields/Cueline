@@ -9,7 +9,7 @@
 ```bash
 cp .dev.vars.example .dev.vars        # then put your real key in .dev.vars (gitignored)
 npm install
-npm run dev:full                      # wrangler pages dev: UI + /api/ai on one origin
+npm run dev:full                      # build, then wrangler pages dev dist: UI + /api/ai on :8788
 ```
 `.dev.vars.example`
 ```

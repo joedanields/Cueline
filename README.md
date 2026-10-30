@@ -4,7 +4,11 @@
 A guest-first celebration planner that turns *who's coming* into quantities, seating, accessibility,
 prep tasks, helper assignments — and a live run sheet that re-plans itself when the day runs late.
 
-🔗 **Live:** `<your-project>.pages.dev` · 🎥 **Demo video:** `<link>` · 📄 **Docs:** [`/docs`](docs)
+🔗 **Live:** _deployment link added after Cloudflare deploy_ · 🎥 **Demo video:** _added at submission_ · 📄 **Docs:** [`/docs`](docs)
+
+> Try it in 30 seconds: open the app → **Load demo: Grandpa’s 75th** → Guests → Plan → Run sheet →
+> **Live** → set the rehearsal clock to 12:40 → **Custom delay 25** (the cake is late) → pick a
+> recovery option that keeps the seniors’ lunch on time.
 
 ---
 
@@ -48,21 +52,44 @@ React SPA (Vite, TypeScript) on **Cloudflare Pages**, with one **Pages Function*
 holds the Gemini key as a secret and only accepts named tasks. All state lives in the browser
 (localStorage). Details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+```
+src/engine/    pure planning maths (quantities, seating, budget, schedule, live shift, recovery, ics)
+src/shared/    zod schemas + AI task contracts, shared by the browser and the proxy
+src/ai/        typed AI client, SHA-256 cache, offline fallbacks, useAi hook
+src/features/  one folder per screen: intake, guests, plan, timeline, vendors, helpers,
+               runsheet, live, versions, export
+functions/api/ the only code that talks to Gemini (guards, task registry, prompts)
+```
+
 ## Quality
-- **Security:** key server-side only, origin/size/rate guards, CSP & security headers, no unsafe HTML — [`docs/SECURITY.md`](docs/SECURITY.md)
-- **Testing:** Vitest + Testing Library + axe; engine coverage ≥ 95 % — [`docs/TESTING.md`](docs/TESTING.md)
-- **Accessibility:** WCAG 2.2 AA target, full keyboard support, screen-reader announcements — [`docs/ACCESSIBILITY.md`](docs/ACCESSIBILITY.md)
-- **Efficiency:** lazy routes, cached/de-duplicated AI calls, < 150 KB initial JS
+- **Security:** key server-side only; the proxy accepts 9 named tasks, never raw prompts; origin
+  allowlist, 32 KB cap, per-IP rate limit, generic errors, `no-store`; CSP & security headers;
+  guest and helper names pseudonymized before any AI call; no unsafe HTML; `npm audit --omit=dev`
+  clean — [`docs/SECURITY.md`](docs/SECURITY.md)
+- **Testing:** 259 tests (Vitest + Testing Library + vitest-axe). Coverage: 98.8 % lines,
+  88.8 % branches, 86.9 % functions overall; **engine 100 % lines**, proxy 100 % lines.
+  Every screen has an axe test with zero violations — [`docs/TESTING.md`](docs/TESTING.md)
+- **Accessibility:** WCAG 2.2 AA target: landmarks, skip link, focus moved to each page's h1,
+  ARIA tabs and radio groups, live-region announcements (assertive for Live-mode conflicts),
+  icon + text statuses, keyboard alternative to drag, shortcuts dialog (`?`) that can be turned
+  off, high-contrast Live mode — [`docs/ACCESSIBILITY.md`](docs/ACCESSIBILITY.md)
+- **Efficiency:** lazy routes (Live mode is its own ~5 KB chunk), **100 KB gzip initial JS**,
+  memoized engine selectors (200-guest recompute < 50 ms, tested), cached AI responses,
+  aborted superseded requests
 
 ## Run locally
 ```bash
 git clone <repo> && cd cueline
-cp .dev.vars.example .dev.vars   # add your Gemini key (never committed)
 npm install
-npm run dev:full                 # http://localhost:8788
-npm run test                     # tests
+npm run dev                      # UI only on :5173 (AI features fall back gracefully)
+
+cp .dev.vars.example .dev.vars   # add your Gemini key + model (never committed)
+npm run dev:full                 # build + UI and /api/ai on http://localhost:8788
+
+npm run lint && npm run typecheck && npm run test && npm run build
+npm run coverage                 # enforces the thresholds in vitest.config.ts
 ```
-Deploy: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+Deploy: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) · Build log & decisions: [`docs/PROGRESS.md`](docs/PROGRESS.md)
 
 ## Out of scope
 Payments, a real vendor marketplace, accounts/multi-device sync, sending SMS/email (Cueline produces

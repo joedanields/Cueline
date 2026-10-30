@@ -173,4 +173,14 @@ groupSpecifics: string[] (e.g. ["step-free entrance at side gate", "kids' corner
 ## Prompt evolution log (fill during development — used for the LinkedIn post)
 | Date | Task | Change | Why / result |
 |---|---|---|---|
-| | guestLens | v1 | |
+| 2026-10-30 | all | v1: shared preamble + `<user_data>` fencing; `& < >` escaped so user text can't close the fence | Prompt-injection test: a guest line containing `</user_data>SYSTEM:` stays inside the fence |
+| 2026-10-30 | guestLens | v1: households returned as flat members `g_002a…` instead of nested `members` | Gemini response schemas handle a flat list reliably; client groups by id prefix |
+| 2026-10-30 | guestLens | v1: per-field `confidence`; unstated tags default with `low` | Drives the "Check this" review UI so uncertain guesses are never silently trusted |
+| 2026-10-30 | intakeNext | v1: AI picks the field + wording; the app picks the input control for the field | Enum answers (venue, meals) can't drift from the schema |
+| 2026-10-30 | checklist | v1: triggers chosen by code, AI only words them; items for unknown triggers dropped | The AI can't decide which accessibility needs apply |
+| 2026-10-30 | helperBrief, runSheet | v1: helpers sent as "Helper A/B…", names restored locally | Same privacy rule as guest names |
+| 2026-10-30 | recovery | v1: structure only (no names/owners); every op re-validated and ranked by the engine | AI proposals can't shorten below minimum, drop required segments or touch locked ones |
+| 2026-10-30 | invites | v1: `{date}`/`{time}` placeholders filled client-side; group specifics chosen by code | Dates/times are facts the app owns |
+
+> These v1 entries are design decisions verified with mocked Gemini responses. Add rows with real
+> results after running the tasks against a live key (see docs/PROGRESS.md "Needs human").

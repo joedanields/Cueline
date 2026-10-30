@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/Button';
 import { useAnnounce } from '../../components/ui/LiveRegion';
 import { useStore } from '../../store';
 import { DeleteDataPanel } from './DeleteDataPanel';
+import { StepsPanel } from './StepsPanel';
 
 const linkButton = 'inline-flex min-h-[44px] items-center rounded border-2 px-4 py-2 font-medium';
 
@@ -42,6 +43,7 @@ export default function HomeScreen() {
           </Button>
         </div>
       </section>
+      <StepsPanel />
       <DeleteDataPanel />
     </Page>
   );

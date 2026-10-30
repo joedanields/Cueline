@@ -101,7 +101,7 @@ Keep dependencies minimal. Ask before adding any dependency not listed here.
 
 ```bash
 npm run dev          # Vite dev server (UI only; AI calls go to wrangler)
-npm run dev:full     # wrangler pages dev — UI + /api/ai with .dev.vars
+npm run dev:full     # build + wrangler pages dev dist — UI + /api/ai with .dev.vars on :8788
 npm run build        # typecheck + vite build
 npm run test         # vitest run
 npm run test:watch

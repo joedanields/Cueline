@@ -163,6 +163,23 @@
   sent), downloads, print views, dialog focus/escape/axe, shortcut navigation, typing/off
   guards, Live `d`/`n`.
 
+### Phase 11 — Polish & hardening ✅
+- **Definition of done:** lint (0 warnings), typecheck, 259 tests, build all green. No
+  `console.log`, `any`, `dangerouslySetInnerHTML` / `innerHTML` / `eval`; no source file over 200 lines.
+- **Coverage** (`npm run coverage`, thresholds enforced): 98.84 % lines/statements,
+  88.77 % branches, 86.93 % functions; engine 100 % lines (92.7 % branches); proxy 100 % lines;
+  AI client 98 %. Added error-boundary and toaster tests.
+- **Bundle:** initial JS for `/` = **100.0 KB gzip** (budget 150 KB); Live mode chunk 4.9 KB.
+- **Security checklist (SECURITY §7):** key greps empty, `.dev.vars`/`.env` untracked,
+  `npm audit --omit=dev` 0 vulnerabilities, proxy 405/403/400/413/415/429 covered by tests.
+- **Repo size:** 1.3 MB tracked (2.0 MB working tree excluding node_modules/.git, incl. dist).
+- Home shows a "step by step" progress panel (status as icon + text) linking every stage.
+- `dev:full` switched to `npm run build && wrangler pages dev dist --port 8788` (the proxy-command
+  form is deprecated in Wrangler 4). README finished; AI_PROMPTS evolution log filled with v1
+  design entries; DEPLOYMENT and CLAUDE.md command lines updated.
+- Test timeouts raised (15 s per test, 10 s async waits) so screen tests stay stable under
+  coverage instrumentation.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|
@@ -201,6 +218,7 @@
 | 9 | Live mode has a rehearsal clock when "now" is outside the event window. | Lets organizers rehearse and lets the demo show a delay before the real day. |
 | 9 | The Quick fix is computed first and shown while the AI is asked; AI options replace it only if at least one survives engine validation. | Live mode must never wait on the network to offer something safe. |
 | 10 | Printing uses dedicated routes (`/print/:kind`) plus the browser print dialog, with `no-print` on app chrome. | Clean documents without hidden-section tricks; "Save as PDF" works the same. |
+| 11 | `dev:full` builds and serves `dist` instead of proxying the Vite dev server. | Wrangler 4 deprecates the proxy-command form; this form is supported and matches production. Use `npm run dev` for UI-only hot reload. |
 | 10 | Added a guest-list CSV export. | SECURITY §4 requires formula stripping on export; gives organizers a backup outside the browser. |
 | — | Commit author changed to `joedanields <joedanielajd@gmail.com>` (user request); Phases 0–5 history rewritten before any push. | User instruction. |
 | 2 | Shorten/drop pull later movable segments earlier by the freed minutes; swap/moveBefore re-sequence from the earliest affected segment. | Matches a sequential run sheet; parallel segments after a swap get serialized (acceptable). |
@@ -209,8 +227,27 @@
 - **Phase 3 manual check:** put a real key in `.dev.vars` (copy `.dev.vars.example`; set
   `GEMINI_MODEL` to a current Gemini flash model id), run `npm run dev:full`, then
   `curl -X POST http://localhost:8788/api/ai -H "content-type: application/json" -H "Origin: http://localhost:8788" -d '{"task":"checklist","input":{"triggers":["mobility:wheelchair"],"venueType":"hall","outdoor":false}}'`.
-  All proxy behaviour is covered by mocked tests; real Gemini output against the response
-  schemas is unverified until this runs.
+- **Live-key check of all 9 tasks:** every task is tested only against mocked Gemini responses.
+  Run each once from the UI with a real key (demo data), confirm Gemini accepts each
+  `responseSchema` and the outputs pass zod, and add real results to the AI_PROMPTS log.
+- **Phase 12 — deploy (docs/DEPLOYMENT.md):** create the Cloudflare Pages project; set
+  `GEMINI_API_KEY` (Secret), `GEMINI_MODEL`, `ALLOWED_ORIGINS`, `NODE_VERSION=20`; deploy; run the
+  post-deploy curl checks (405/403/400) and verify headers; optionally add a WAF rate-limit rule
+  (custom domain) and a quota cap on the Gemini key.
+- **Manual test script (TESTING.md):** keyboard-only walkthrough in a real browser, NVDA/VoiceOver
+  pass on Guest Lens and Live mode, offline Quick fix, 200 % zoom and 320 px width, Lighthouse
+  mobile (Perf ≥ 90, A11y 100, Best Practices ≥ 95).
+- **Submission (docs/SUBMISSION.md):** make the repo public, add the live link and video to the
+  README, record the demo video, write the LinkedIn post, fill the attempt log.
 
 ## Open issues
-- (none yet)
+- **Colour contrast isn't machine-checked in tests.** jsdom has no canvas, so axe's
+  `color-contrast` rule is off in unit tests. Tokens were chosen to meet AA (documented in
+  `tailwind.config.ts`); confirm with Lighthouse after deploy.
+- **Gemini schema compatibility is unverified live.** Response schemas use the documented
+  OpenAPI subset (OBJECT/ARRAY/STRING/INTEGER/BOOLEAN, `enum`, `required`). If a model rejects
+  one, the proxy returns `upstream` and every screen falls back to its deterministic path.
+- **Dev-only audit findings** remain in the toolchain (wrangler/miniflare, vite/vitest transitive
+  deps). Nothing in `dependencies` is affected; `npm audit --omit=dev` is clean.
+- **Run-sheet swaps serialize parallel segments** (two owners at the same time) after a
+  swap/move. Acceptable for sequential family events; noted for future work.
