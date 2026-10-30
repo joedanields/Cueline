@@ -12,7 +12,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}', 'functions/**/*.ts'],
-      exclude: ['**/*.test.{ts,tsx}', 'src/main.tsx', 'src/**/index.ts', '**/*.d.ts'],
+      exclude: ['**/*.test.{ts,tsx}', 'src/main.tsx', 'src/shared/schemas/index.ts', '**/*.d.ts'],
       reporter: ['text-summary', 'text'],
       // Thresholds from docs/TESTING.md.
       thresholds: {

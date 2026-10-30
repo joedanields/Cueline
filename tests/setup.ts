@@ -11,7 +11,9 @@ const unmockedFetch = (input: unknown): Promise<Response> => {
 globalThis.fetch = unmockedFetch as typeof fetch;
 
 if (typeof document !== 'undefined') {
-  const { cleanup } = await import('@testing-library/react');
+  const { cleanup, configure } = await import('@testing-library/react');
+  // Lazy routes compile on first import in jsdom, which can exceed the 1 s default.
+  configure({ asyncUtilTimeout: 5000 });
   afterEach(() => {
     cleanup();
     localStorage.clear();

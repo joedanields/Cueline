@@ -3,6 +3,7 @@ import { NavLink, Route, Routes, useLocation } from 'react-router';
 import { SkipLink } from './components/ui/SkipLink';
 import { LiveRegionProvider } from './components/ui/LiveRegion';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { Toaster } from './components/ui/Toaster';
 import { NotFoundScreen, ROUTES } from './routes';
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -58,6 +59,7 @@ export function App() {
           Your plan stays in this browser. Guest names are never sent to the AI.
         </div>
       </footer>
+      <Toaster />
     </LiveRegionProvider>
   );
 }
