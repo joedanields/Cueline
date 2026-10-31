@@ -2,6 +2,7 @@ import { addMinutes, format } from 'date-fns';
 import type { CelebrationEvent, Helper, PrepTask, RunSheet } from '../../shared/schemas';
 import type { ScheduledTask } from '../../engine/schedule';
 import type { HelperCardData } from '../../lib/urlState';
+import { newId } from '../../lib/id';
 
 export type Assignments = {
   tasks: { title: string; due: string }[];
@@ -68,5 +69,36 @@ export function buildHelperCard(
       .slice(0, 30)
       .map((t) => ({ title: t.title.slice(0, 100), due: t.due.slice(0, 20) })),
     segments: a.segments.slice(0, 30),
+  };
+}
+
+export type HelperForm = { name: string; phone: string; from: string; to: string };
+export const EMPTY_HELPER_FORM: HelperForm = { name: '', phone: '', from: '', to: '' };
+
+const MAX_NAME = 60;
+const MAX_PHONE = 20;
+const toIso = (local: string) => (local ? new Date(local).toISOString() : undefined);
+
+/**
+ * Validate the add-helper form and build a Helper. Times are `datetime-local` strings, so plain
+ * string comparison orders them correctly.
+ * @example helperFromForm({ name: 'Priya', phone: '', from: '', to: '' }) // { ok: true, helper }
+ */
+export function helperFromForm(
+  f: HelperForm,
+): { ok: true; helper: Helper } | { ok: false; error: string } {
+  const name = f.name.trim();
+  if (!name) return { ok: false, error: 'Enter a name.' };
+  if (f.from && f.to && f.to <= f.from)
+    return { ok: false, error: 'Availability must end after it starts.' };
+  return {
+    ok: true,
+    helper: {
+      id: newId('h'),
+      name: name.slice(0, MAX_NAME),
+      phone: f.phone.trim().slice(0, MAX_PHONE) || undefined,
+      availableFrom: toIso(f.from),
+      availableTo: toIso(f.to),
+    },
   };
 }

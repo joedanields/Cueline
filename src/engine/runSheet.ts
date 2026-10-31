@@ -12,29 +12,31 @@ export type Break = { constraintId: string; byMin: number };
 
 const end = (s: Segment) => s.offsetMin + s.durationMin;
 const active = (s: Segment) => s.status !== 'skipped';
+const overlapMin = (a: Segment, b: Segment) =>
+  Math.min(end(a), end(b)) - Math.max(a.offsetMin, b.offsetMin);
+
+/** Break for constraints that compare a segment with a second one; inactive pairs never break. */
+function pairBreak(c: GuestConstraint, seg: Segment, other: Segment | undefined): number {
+  if (!other || !active(other)) return 0;
+  return c.kind === 'must_not_overlap'
+    ? overlapMin(seg, other)
+    : seg.offsetMin - end(other) - (c.minutesFromStart ?? 0);
+}
 
 /**
  * Minutes by which a constraint is broken (0 = satisfied). Constraints on skipped segments no
  * longer apply. `max_wait` uses `minutesFromStart` as the longest allowed gap after `otherSegmentId`.
- * @example constraintBreak({ kind: 'must_start_before', segmentId: 'l', minutesFromStart: 80 }, byId) // 10 if lunch starts at 90
+ * @example constraintBreak({ kind: 'must_start_before', segmentId: 'l', minutesFromStart: 80 }, byId)
+ * // 10 if lunch starts at 90
  */
 export function constraintBreak(c: GuestConstraint, byId: Map<string, Segment>): number {
   const seg = byId.get(c.segmentId);
   if (!seg || !active(seg)) return 0;
-  const other = c.otherSegmentId ? byId.get(c.otherSegmentId) : undefined;
   const limit = c.minutesFromStart ?? 0;
-  switch (c.kind) {
-    case 'must_start_before':
-      return Math.max(0, seg.offsetMin - limit);
-    case 'must_end_before':
-      return Math.max(0, end(seg) - limit);
-    case 'must_not_overlap':
-      if (!other || !active(other)) return 0;
-      return Math.max(0, Math.min(end(seg), end(other)) - Math.max(seg.offsetMin, other.offsetMin));
-    case 'max_wait':
-      if (!other || !active(other)) return 0;
-      return Math.max(0, seg.offsetMin - end(other) - limit);
-  }
+  if (c.kind === 'must_start_before') return Math.max(0, seg.offsetMin - limit);
+  if (c.kind === 'must_end_before') return Math.max(0, end(seg) - limit);
+  const other = c.otherSegmentId ? byId.get(c.otherSegmentId) : undefined;
+  return Math.max(0, pairBreak(c, seg, other));
 }
 
 /**
@@ -48,54 +50,64 @@ export function findBreaks(segments: Segment[], constraints: GuestConstraint[]):
     .filter((b) => b.byMin > 0);
 }
 
+/** Problems with one segment on its own: below its minimum, or running past the event end. */
+function segmentViolations(a: Segment, eventDurationMin: number): Violation[] {
+  const out: Violation[] = [];
+  if (a.minDurationMin > a.durationMin) {
+    const message = `Shorter than its minimum of ${a.minDurationMin} min.`;
+    out.push({ segmentId: a.id, kind: 'min_duration', severity: 'hard', message });
+  }
+  if (end(a) > eventDurationMin) {
+    const message = `Ends ${end(a) - eventDurationMin} min after the event's planned end.`;
+    out.push({ segmentId: a.id, kind: 'overrun', severity: 'soft', message });
+  }
+  return out;
+}
+
+/** The same owner can't run two segments at once; each clash is reported on the later pair item. */
+function ownerOverlaps(segs: Segment[]): Violation[] {
+  return segs.flatMap((a, i) =>
+    segs
+      .slice(i + 1)
+      .filter((b) => a.ownerId && a.ownerId === b.ownerId && overlapMin(a, b) > 0)
+      .map((b) => ({
+        segmentId: b.id,
+        kind: 'overlap' as const,
+        severity: 'hard' as const,
+        message: `Same person also runs “${a.title}” at this time.`,
+      })),
+  );
+}
+
+function constraintViolations(runSheet: RunSheet): Violation[] {
+  const byId = new Map(runSheet.segments.map((s) => [s.id, s]));
+  return runSheet.constraints.flatMap((c) => {
+    const by = constraintBreak(c, byId);
+    if (by <= 0) return [];
+    const message = `${c.reason} — misses by ${by} min.`;
+    return [
+      {
+        segmentId: c.segmentId,
+        kind: 'constraint',
+        severity: c.severity,
+        constraintId: c.id,
+        message,
+      },
+    ];
+  });
+}
+
 /**
  * Validate a run sheet: same-owner overlaps, guest constraints, event length, min durations.
  * @example validateRunSheet(runSheet, 240).filter((v) => v.severity === 'hard')
  */
 export function validateRunSheet(runSheet: RunSheet, eventDurationMin: number): Violation[] {
   const segs = runSheet.segments.filter(active);
-  const out: Violation[] = [];
-  segs.forEach((a, i) => {
-    if (a.minDurationMin > a.durationMin) {
-      out.push({
-        segmentId: a.id,
-        kind: 'min_duration',
-        severity: 'hard',
-        message: `Shorter than its minimum of ${a.minDurationMin} min.`,
-      });
-    }
-    if (end(a) > eventDurationMin) {
-      out.push({
-        segmentId: a.id,
-        kind: 'overrun',
-        severity: 'soft',
-        message: `Ends ${end(a) - eventDurationMin} min after the event's planned end.`,
-      });
-    }
-    for (const b of segs.slice(i + 1)) {
-      if (a.ownerId && a.ownerId === b.ownerId && a.offsetMin < end(b) && b.offsetMin < end(a)) {
-        out.push({
-          segmentId: b.id,
-          kind: 'overlap',
-          severity: 'hard',
-          message: `Same person also runs “${a.title}” at this time.`,
-        });
-      }
-    }
-  });
-  const byId = new Map(runSheet.segments.map((s) => [s.id, s]));
-  for (const c of runSheet.constraints) {
-    const by = constraintBreak(c, byId);
-    if (by > 0)
-      out.push({
-        segmentId: c.segmentId,
-        kind: 'constraint',
-        severity: c.severity,
-        constraintId: c.id,
-        message: `${c.reason} — misses by ${by} min.`,
-      });
-  }
-  return out;
+  return [
+    ...segs.flatMap((a) => segmentViolations(a, eventDurationMin)),
+    ...ownerOverlaps(segs),
+    ...constraintViolations(runSheet),
+  ];
 }
 
 /**

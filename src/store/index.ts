@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { emptyPersistedState, SCHEMA_VERSION } from '../shared/schemas';
-import { buildDemoState } from '../data/demo';
-import { cacheClear } from '../ai/cache';
-import { allocateBudget } from '../engine/budget';
-import { computeHeadcount } from '../engine/rsvp';
+import { SCHEMA_VERSION } from '../shared/schemas';
 import { useToastStore } from './toastStore';
 import {
   CORRUPT_MESSAGE,
@@ -23,6 +19,7 @@ import { createTaskSlice } from './slices/taskSlice';
 import { createRunSheetSlice } from './slices/runSheetSlice';
 import { createChecklistSlice } from './slices/checklistSlice';
 import { createVersionSlice } from './slices/versionSlice';
+import { createRootActions } from './slices/rootActions';
 
 const notifyCorrupt = () => useToastStore.getState().pushToast(CORRUPT_MESSAGE, 'warning');
 
@@ -38,51 +35,7 @@ export const useStore = create<StoreState>()(
       ...createRunSheetSlice(set, get, api),
       ...createChecklistSlice(set, get, api),
       ...createVersionSlice(set, get, api),
-      confirmEvent: (event) => {
-        const { event: prev, budget, guests, maybeProbability } = get();
-        const changed =
-          !prev ||
-          prev.budget.amount !== event.budget.amount ||
-          prev.budget.currency !== event.budget.currency ||
-          JSON.stringify(prev.weights) !== JSON.stringify(event.weights);
-        const expected = computeHeadcount(guests, maybeProbability).expected;
-        set({
-          event,
-          budget:
-            changed || budget.length === 0
-              ? allocateBudget(event.budget, event.weights, budget, expected)
-              : budget,
-        });
-        get().snapshot('Event details confirmed');
-      },
-      reallocateBudget: () => {
-        const { event, budget, guests, maybeProbability } = get();
-        if (!event) return;
-        set({
-          budget: allocateBudget(
-            event.budget,
-            event.weights,
-            budget,
-            computeHeadcount(guests, maybeProbability).expected,
-          ),
-        });
-      },
-      replaceState: (state) => set({ ...emptyPersistedState(), ...state, changeLog: [] }),
-      loadDemo: () => {
-        get().replaceState(buildDemoState(new Date()));
-        get().snapshot('Loaded demo: Grandpa’s 75th');
-      },
-      deleteAllData: () => {
-        set({
-          ...emptyPersistedState(),
-          event: undefined,
-          runSheet: undefined,
-          versions: [],
-          changeLog: [],
-        });
-        useStore.persist.clearStorage();
-        cacheClear(); // AI responses in memory and sessionStorage
-      },
+      ...createRootActions(set, get, api),
     }),
     {
       name: STORAGE_KEY,

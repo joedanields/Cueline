@@ -40,21 +40,10 @@ async function attempt(
   }
 }
 
-/**
- * Call Gemini with structured JSON output. One retry on 5xx/429 (with jitter); never on 4xx.
- * Upstream bodies are never returned — only generic error codes.
- */
-export async function callGemini(
-  env: GeminiEnv,
-  task: TaskDefinition,
-  prompt: Prompt,
-  deps: GeminiDeps,
-): Promise<GeminiResult> {
-  if (!env.GEMINI_API_KEY || !env.GEMINI_MODEL) return { ok: false, code: 'misconfigured' };
-  const url = `${API_BASE}/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent`;
-  const init: RequestInit = {
+function buildRequest(apiKey: string, task: TaskDefinition, prompt: Prompt): RequestInit {
+  return {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: prompt.system }] },
       contents: [{ role: 'user', parts: [{ text: prompt.user }] }],
@@ -69,25 +58,50 @@ export async function callGemini(
       },
     }),
   };
+}
+
+/** Map a transport failure or non-2xx status to a generic code; undefined means "read the body". */
+function failureCode(res: Response | 'timeout' | 'network'): AiErrorCode | undefined {
+  if (res === 'timeout') return 'timeout';
+  if (res === 'network') return 'upstream';
+  if (res.status === 429) return 'rate_limited';
+  return res.ok ? undefined : 'upstream';
+}
+
+/** Parse the candidate text as JSON and validate it against the task's output schema. */
+async function readOutput(res: Response, task: TaskDefinition): Promise<GeminiResult> {
+  const invalid: GeminiResult = { ok: false, code: 'invalid_response' };
+  try {
+    const text = candidateText(await res.json());
+    if (text === undefined) return invalid;
+    const parsed = task.outputSchema.safeParse(JSON.parse(text));
+    return parsed.success ? { ok: true, data: parsed.data } : invalid;
+  } catch {
+    return invalid;
+  }
+}
+
+/**
+ * Call Gemini with structured JSON output. One retry on 5xx/429 (with jitter); never on 4xx.
+ * Upstream bodies are never returned — only generic error codes.
+ * @example await callGemini(env, TASKS.helperBrief, prompt, deps) // { ok: true, data: { brief } }
+ */
+export async function callGemini(
+  env: GeminiEnv,
+  task: TaskDefinition,
+  prompt: Prompt,
+  deps: GeminiDeps,
+): Promise<GeminiResult> {
+  if (!env.GEMINI_API_KEY || !env.GEMINI_MODEL) return { ok: false, code: 'misconfigured' };
+  const url = `${API_BASE}/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent`;
+  const init = buildRequest(env.GEMINI_API_KEY, task, prompt);
 
   let res = await attempt(url, init, task.timeoutMs, deps);
   if (typeof res !== 'string' && isRetryable(res.status)) {
     await deps.sleep(RETRY_BASE_MS + deps.random() * RETRY_JITTER_MS);
     res = await attempt(url, init, task.timeoutMs, deps);
   }
-  if (res === 'timeout') return { ok: false, code: 'timeout' };
-  if (res === 'network') return { ok: false, code: 'upstream' };
-  if (res.status === 429) return { ok: false, code: 'rate_limited' };
-  if (!res.ok) return { ok: false, code: 'upstream' };
-
-  try {
-    const text = candidateText(await res.json());
-    if (text === undefined) return { ok: false, code: 'invalid_response' };
-    const parsed = task.outputSchema.safeParse(JSON.parse(text));
-    return parsed.success
-      ? { ok: true, data: parsed.data }
-      : { ok: false, code: 'invalid_response' };
-  } catch {
-    return { ok: false, code: 'invalid_response' };
-  }
+  const code = failureCode(res);
+  if (code || typeof res === 'string') return { ok: false, code: code ?? 'upstream' };
+  return readOutput(res, task);
 }

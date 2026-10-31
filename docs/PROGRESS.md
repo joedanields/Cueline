@@ -188,6 +188,23 @@
   (`thinkingBudget: 0`), proxy timeout 25 s, client timeouts sized for one retry. Verified
   `intakeNext`, `vendorQuestions` and `helperBrief` return valid JSON through the local proxy.
 
+### Size and complexity limits enforced (2026-11-01)
+- CLAUDE.md §5 limits are now ESLint rules: `max-lines-per-function` 40 (80 for components and
+  hooks), `max-lines` 200, `complexity` 10, `max-depth` 3, `max-params` 4. Tests and
+  `src/data/demo.ts` (fixture data) are exempt.
+- 49 over-long and 15 over-complex functions refactored, behaviour unchanged:
+  - Engine: `checkOp`, `deterministicRecovery`, `constraintBreak`/`validateRunSheet` and
+    `computeQuantities` split into small named helpers (quantities are per-item builders).
+  - Proxy/AI client: request building, failure mapping and output parsing separated.
+  - Logic files: CSV parser as a tiny state machine; intake validation as a check table;
+    offline run sheet and its guest constraints as data tables.
+  - Screens split into focused components (Live, run sheet, plan tabs, guests, helpers,
+    vendors, export, versions); cross-slice store actions moved to `slices/rootActions.ts`.
+- Shared UI extracted to remove duplication: `TableHead`, `NeedsFirst`, `OwnerSelect`.
+- Logic moved out of components into tested pure functions: `guestCsv`, `helperFromForm`.
+- Result: lint/typecheck/format/build green; 264 tests; coverage 98.1 % lines, 90.1 % branches,
+  88.7 % functions.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|

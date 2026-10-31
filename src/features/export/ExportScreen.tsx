@@ -5,9 +5,9 @@ import { useAnnounce } from '../../components/ui/LiveRegion';
 import { useStore } from '../../store';
 import { selectSchedule } from '../../store/selectors';
 import { buildIcs } from '../../engine/ics';
-import { toCsv } from '../../lib/csv';
 import { downloadText } from '../../lib/download';
 import { InvitesPanel } from './components/InvitesPanel';
+import { guestCsv } from './guestCsv';
 
 const linkClass =
   'inline-flex min-h-[44px] items-center rounded border-2 border-line px-4 underline';
@@ -29,21 +29,7 @@ export default function ExportScreen() {
     announce('Calendar file with prep deadlines downloaded.');
   };
   const csv = () => {
-    const rows = [
-      ['Name', 'Age band', 'Diet', 'Mobility', 'Sensory', 'Travel', 'Role', 'RSVP', 'Note'],
-      ...guests.map((g) => [
-        g.name,
-        g.ageBand,
-        g.dietary.join('; '),
-        g.mobility,
-        g.sensory,
-        g.travel,
-        g.role,
-        g.rsvp,
-        g.note,
-      ]),
-    ];
-    downloadText('cueline-guests.csv', toCsv(rows), 'text/csv');
+    downloadText('cueline-guests.csv', guestCsv(guests), 'text/csv');
     announce('Guest list downloaded.');
   };
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { RankedRecovery } from '../../../engine/recovery';
 import type { Pending } from '../useLiveControl';
 
@@ -9,6 +9,40 @@ type Props = {
   onApply: (option: RankedRecovery | undefined) => void;
   onCancel: () => void;
 };
+
+type CardProps = { value: string; checked: boolean; onSelect: () => void; children: ReactNode };
+
+/** A large radio card; the whole card is the label, so it is easy to hit on a phone. */
+function RadioCard({ value, checked, onSelect, children }: CardProps) {
+  return (
+    <label
+      className={`flex cursor-pointer gap-3 rounded border-2 p-3 ${checked ? 'border-accent' : 'border-line'}`}
+    >
+      <input
+        type="radio"
+        name="recovery"
+        value={value}
+        checked={checked}
+        onChange={onSelect}
+        className="mt-2 h-6 w-6"
+      />
+      {children}
+    </label>
+  );
+}
+
+function OptionText({ option: o }: { option: RankedRecovery }) {
+  return (
+    <span className="space-y-1">
+      <span className="block font-bold">
+        {o.label}
+        {o.hardRemaining > 0 ? ' — ⚠ still misses a guest need' : ''}
+      </span>
+      <span className="block">{o.rationale}</span>
+      <span className="block text-muted">{o.impact.join('; ')}</span>
+    </span>
+  );
+}
 
 /** Ranked recovery options as a native radio group (arrow keys move between them), then Apply. */
 export function RecoveryOptions({ pending, onApply, onCancel }: Props) {
@@ -48,41 +82,18 @@ export function RecoveryOptions({ pending, onApply, onCancel }: Props) {
             {pending.source === 'ai' ? 'Ranked options (best first)' : 'Quick fix (works offline)'}
           </legend>
           {pending.options.map((o, i) => (
-            <label
+            <RadioCard
               key={`${o.label}-${i}`}
-              className={`flex cursor-pointer gap-3 rounded border-2 p-3 ${choice === String(i) ? 'border-accent' : 'border-line'}`}
+              value={String(i)}
+              checked={choice === String(i)}
+              onSelect={() => setChoice(String(i))}
             >
-              <input
-                type="radio"
-                name="recovery"
-                value={i}
-                checked={choice === String(i)}
-                onChange={() => setChoice(String(i))}
-                className="mt-2 h-6 w-6"
-              />
-              <span className="space-y-1">
-                <span className="block font-bold">
-                  {o.label}
-                  {o.hardRemaining > 0 ? ' — ⚠ still misses a guest need' : ''}
-                </span>
-                <span className="block">{o.rationale}</span>
-                <span className="block text-muted">{o.impact.join('; ')}</span>
-              </span>
-            </label>
+              <OptionText option={o} />
+            </RadioCard>
           ))}
-          <label
-            className={`flex cursor-pointer gap-3 rounded border-2 p-3 ${choice === KEEP ? 'border-accent' : 'border-line'}`}
-          >
-            <input
-              type="radio"
-              name="recovery"
-              value={KEEP}
-              checked={choice === KEEP}
-              onChange={() => setChoice(KEEP)}
-              className="mt-2 h-6 w-6"
-            />
+          <RadioCard value={KEEP} checked={choice === KEEP} onSelect={() => setChoice(KEEP)}>
             <span>Keep the delay and change nothing</span>
-          </label>
+          </RadioCard>
         </fieldset>
         <div className="flex flex-wrap gap-3">
           <button

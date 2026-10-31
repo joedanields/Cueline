@@ -71,9 +71,12 @@ functions/api/ the only code that talks to Gemini (guards, task registry, prompt
   allowlist, 32 KB cap, per-IP rate limit, generic errors, `no-store`; CSP & security headers;
   guest and helper names pseudonymized before any AI call; no unsafe HTML; `npm audit --omit=dev`
   clean — [`docs/SECURITY.md`](docs/SECURITY.md)
-- **Testing:** 259 tests (Vitest + Testing Library + vitest-axe). Coverage: 98.8 % lines,
-  88.8 % branches, 86.9 % functions overall; **engine 100 % lines**, proxy 100 % lines.
+- **Testing:** 264 tests (Vitest + Testing Library + vitest-axe). Coverage: 98.1 % lines,
+  90.1 % branches, 88.7 % functions overall; **engine 99.7 % lines, 100 % functions**.
   Every screen has an axe test with zero violations — [`docs/TESTING.md`](docs/TESTING.md)
+- **Code quality:** strict TypeScript, Prettier, and lint-enforced limits: functions ≤ 40 lines
+  (components and hooks ≤ 80), files ≤ 200 lines, complexity ≤ 10, ≤ 4 parameters. Business
+  logic lives in pure, tested modules; components only render and dispatch.
 - **Accessibility:** WCAG 2.2 AA target: landmarks, skip link, focus moved to each page's h1,
   ARIA tabs and radio groups, live-region announcements (assertive for Live-mode conflicts),
   icon + text statuses, keyboard alternative to drag, shortcuts dialog (`?`) that can be turned

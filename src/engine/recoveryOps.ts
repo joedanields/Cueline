@@ -6,6 +6,28 @@ export type OpCheck = { ok: true } | { ok: false; reason: string };
 const movable = (s: Segment | undefined): s is Segment =>
   !!s && s.status === 'upcoming' && !s.locked;
 
+const OK: OpCheck = { ok: true };
+const fail = (reason: string): OpCheck => ({ ok: false, reason });
+
+function checkShorten(s: Segment | undefined, byMin: number): OpCheck {
+  const running = s?.status === 'upcoming' || s?.status === 'live';
+  if (!s || s.locked || !running) return fail('Segment is locked, finished or unknown.');
+  if (s.durationMin - byMin < s.minDurationMin)
+    return fail(`“${s.title}” can’t go below ${s.minDurationMin} min.`);
+  return OK;
+}
+
+function checkDrop(s: Segment | undefined, constraints: GuestConstraint[]): OpCheck {
+  if (!movable(s)) return fail('Segment is locked, started or unknown.');
+  if (!s.optional) return fail(`“${s.title}” is not optional.`);
+  const protectsNeed = constraints.some((c) => c.severity === 'hard' && c.segmentId === s.id);
+  return protectsNeed ? fail(`“${s.title}” protects a guest need.`) : OK;
+}
+
+/** Both ids differ and both segments can still be moved. */
+const pairMovable = (byId: Map<string, Segment>, a: string, b: string) =>
+  a !== b && movable(byId.get(a)) && movable(byId.get(b));
+
 /**
  * Is this op allowed on the current segments? Never touches locked/done segments, never shortens
  * below minDuration, only drops optional segments without a hard guest constraint.
@@ -18,32 +40,18 @@ export function checkOp(
 ): OpCheck {
   const byId = new Map(segments.map((s) => [s.id, s]));
   switch (op.op) {
-    case 'shorten': {
-      const s = byId.get(op.segmentId);
-      if (!s || s.locked || (s.status !== 'upcoming' && s.status !== 'live'))
-        return { ok: false, reason: 'Segment is locked, finished or unknown.' };
-      if (s.durationMin - op.byMin < s.minDurationMin)
-        return { ok: false, reason: `“${s.title}” can’t go below ${s.minDurationMin} min.` };
-      return { ok: true };
-    }
-    case 'drop': {
-      const s = byId.get(op.segmentId);
-      if (!movable(s)) return { ok: false, reason: 'Segment is locked, started or unknown.' };
-      if (!s.optional) return { ok: false, reason: `“${s.title}” is not optional.` };
-      if (constraints.some((c) => c.severity === 'hard' && c.segmentId === s.id))
-        return { ok: false, reason: `“${s.title}” protects a guest need.` };
-      return { ok: true };
-    }
+    case 'shorten':
+      return checkShorten(byId.get(op.segmentId), op.byMin);
+    case 'drop':
+      return checkDrop(byId.get(op.segmentId), constraints);
     case 'swap':
-      return op.a !== op.b && movable(byId.get(op.a)) && movable(byId.get(op.b))
-        ? { ok: true }
-        : { ok: false, reason: 'Can only swap two different upcoming, unlocked segments.' };
+      return pairMovable(byId, op.a, op.b)
+        ? OK
+        : fail('Can only swap two different upcoming, unlocked segments.');
     case 'moveBefore':
-      return op.segmentId !== op.beforeId &&
-        movable(byId.get(op.segmentId)) &&
-        movable(byId.get(op.beforeId))
-        ? { ok: true }
-        : { ok: false, reason: 'Can only move upcoming, unlocked segments.' };
+      return pairMovable(byId, op.segmentId, op.beforeId)
+        ? OK
+        : fail('Can only move upcoming, unlocked segments.');
   }
 }
 

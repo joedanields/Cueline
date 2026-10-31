@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
-import { Link } from 'react-router';
 import { format } from 'date-fns';
 import { Page } from '../../components/ui/Page';
+import { NeedsFirst } from '../../components/ui/NeedsFirst';
 import { Button } from '../../components/ui/Button';
 import { useAnnounce } from '../../components/ui/LiveRegion';
 import { useStore } from '../../store';
@@ -10,6 +10,7 @@ import type { PrepTask } from '../../shared/schemas';
 import { groupByWeek } from './taskDrafts';
 import { usePrepTasks } from './usePrepTasks';
 import { TaskItem } from './components/TaskItem';
+import { CycleAlert, DoNext } from './components/DoNext';
 
 export default function TimelineScreen() {
   const event = useStore((s) => s.event);
@@ -39,15 +40,14 @@ export default function TimelineScreen() {
 
   if (!event) {
     return (
-      <Page title="Timeline" heading="Prep timeline">
-        <p className="card">
-          Add your{' '}
-          <Link to="/intake" className="underline">
-            event details
-          </Link>{' '}
-          first — every deadline counts back from the event date.
-        </p>
-      </Page>
+      <NeedsFirst
+        title="Timeline"
+        heading="Prep timeline"
+        before="Add your"
+        to="/intake"
+        link="event details"
+        after=" first — every deadline counts back from the event date."
+      />
     );
   }
   return (
@@ -56,25 +56,7 @@ export default function TimelineScreen() {
       heading="Prep timeline"
       intro={`Deadlines count back from ${format(new Date(event.startsAt), 'EEEE d MMMM yyyy')}.`}
     >
-      <section aria-labelledby="donext-heading" className="card space-y-2 border-accent">
-        <h2 id="donext-heading">Do next</h2>
-        {next.length ? (
-          <ol className="list-decimal space-y-1 pl-6">
-            {next.map((t) => (
-              <li key={t.id}>
-                <strong>{t.title}</strong> — due {format(new Date(`${t.due}T00:00:00`), 'd MMM')}
-                {t.isCritical ? ' (critical path)' : ''}
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p>
-            {tasks.length
-              ? 'Nothing is ready to start — everything is done or waiting on something else.'
-              : 'No tasks yet.'}
-          </p>
-        )}
-      </section>
+      <DoNext next={next} hasTasks={tasks.length > 0} />
       <div className="flex flex-wrap items-center gap-2">
         <Button
           variant={tasks.length ? 'secondary' : 'primary'}
@@ -94,11 +76,7 @@ export default function TimelineScreen() {
         ) : null}
       </div>
       {schedule && !schedule.ok ? (
-        <p role="alert" className="card border-danger">
-          <span aria-hidden="true">⚠ </span>These tasks depend on each other in a loop:{' '}
-          {schedule.cycle.map((id) => titles.get(id) ?? id).join(' → ')}. Change an owner or remove
-          a dependency.
-        </p>
+        <CycleAlert cycle={schedule.cycle.map((id) => titles.get(id) ?? id)} />
       ) : null}
       {weeks.map((w) => (
         <section key={w.label} aria-label={w.label} className="space-y-2">

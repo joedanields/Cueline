@@ -8,10 +8,13 @@ import {
   TagConfidence,
   Travel,
 } from './schemas/guest';
-import { MealType, PriorityKey, PriorityWeightsSchema, VenueType } from './schemas/event';
+import { MealType, VenueType } from './schemas/event';
 import { TaskCategory } from './schemas/task';
-import { ConstraintKind, RecoveryOptionSchema, SegmentStatus } from './schemas/runsheet';
 import { VendorType } from './schemas/vendor';
+import { Assumptions, IntakeField, NeedSummary, Slug, text, InputType } from './aiPrimitives';
+
+export { INTAKE_FIELDS, INPUT_TYPES, IntakeField, InputType } from './aiPrimitives';
+import { EVENT_DAY_SCHEMAS } from './aiEventDaySchemas';
 
 /**
  * Contracts for every AI task (docs/AI_PROMPTS.md). Shared by the proxy (validates input and
@@ -30,42 +33,6 @@ export const AI_TASKS = [
 ] as const;
 export const AiTaskName = z.enum(AI_TASKS);
 export type AiTaskName = z.infer<typeof AiTaskName>;
-
-const text = (max: number) => z.string().max(max);
-const Assumptions = z.array(text(200)).max(10).default([]);
-const NeedSummary = z
-  .record(text(40), z.number().int().min(0).max(1000))
-  .refine((r) => Object.keys(r).length <= 40);
-const Slug = z.string().regex(/^[a-z0-9_-]{1,40}$/);
-
-export const INTAKE_FIELDS = [
-  'occasion',
-  'startsAt',
-  'endsAt',
-  'venueType',
-  'region',
-  'culturalContext',
-  'budget',
-  'guestCountRough',
-  'mealTypes',
-  'kidsAgeRange',
-  'weatherBackup',
-  'weights',
-] as const;
-export const IntakeField = z.enum(INTAKE_FIELDS);
-export type IntakeField = z.infer<typeof IntakeField>;
-export const INPUT_TYPES = [
-  'text',
-  'number',
-  'date',
-  'datetime',
-  'single_choice',
-  'multi_choice',
-  'money',
-  'weights',
-] as const;
-export const InputType = z.enum(INPUT_TYPES);
-export type InputType = z.infer<typeof InputType>;
 
 const AnswerValue = z.union([text(200), z.number(), z.array(text(60)).max(10)]);
 const MAX_INTAKE_INPUT_CHARS = 4096;
@@ -187,78 +154,7 @@ export const AiSchemas = {
         .max(12),
     }),
   },
-  runSheet: {
-    input: z.object({
-      occasion: text(80),
-      durationMin: z.number().int().min(30).max(1440),
-      mealTypes: z.array(MealType).max(5),
-      needSummary: NeedSummary,
-      helpers: z.array(z.object({ label: text(30) })).max(20),
-      culturalContext: text(200).optional(),
-      weights: PriorityWeightsSchema,
-    }),
-    output: z.object({
-      segments: z
-        .array(
-          z.object({
-            key: Slug,
-            title: text(80),
-            offsetMin: z.number().int().min(0).max(1440),
-            durationMin: z.number().int().min(1).max(600),
-            minDurationMin: z.number().int().min(1).max(600),
-            ownerLabel: text(30),
-            cue: text(200),
-            priority: PriorityKey,
-            optional: z.boolean(),
-          }),
-        )
-        .min(1)
-        .max(40),
-      constraints: z
-        .array(
-          z.object({
-            kind: ConstraintKind,
-            segmentKey: Slug,
-            minutesFromStart: z.number().int().min(0).max(1440).optional(),
-            otherSegmentKey: Slug.optional(),
-            reason: text(120),
-            needGroup: text(40),
-            severity: z.enum(['hard', 'soft']),
-          }),
-        )
-        .max(30),
-      assumptions: Assumptions,
-    }),
-  },
-  recovery: {
-    input: z.object({
-      segments: z
-        .array(
-          z.object({
-            id: text(40),
-            title: text(80),
-            status: SegmentStatus,
-            offsetMin: z.number().int().min(0),
-            durationMin: z.number().int().min(1),
-            minDurationMin: z.number().int().min(1),
-            priority: PriorityKey,
-            optional: z.boolean(),
-            locked: z.boolean(),
-          }),
-        )
-        .min(1)
-        .max(60),
-      breaks: z
-        .array(
-          z.object({ constraintId: text(40), reason: text(120), byMin: z.number().int().min(1) }),
-        )
-        .min(1)
-        .max(30),
-      weights: PriorityWeightsSchema,
-      nowOffsetMin: z.number().int().min(0).max(1440),
-    }),
-    output: z.object({ options: z.array(RecoveryOptionSchema).min(1).max(3) }),
-  },
+  ...EVENT_DAY_SCHEMAS,
   invites: {
     input: z.object({
       group: text(40),

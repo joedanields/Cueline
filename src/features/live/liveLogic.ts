@@ -1,7 +1,7 @@
 import { addMinutes, format } from 'date-fns';
 import type { AiInput } from '../../shared/aiTasks';
-import type { GuestConstraint, PriorityWeights, Segment } from '../../shared/schemas';
-import type { Break } from '../../engine/runSheet';
+import type { GuestConstraint, Segment } from '../../shared/schemas';
+import type { RecoveryCtx } from '../../engine/recovery';
 
 const MAX_SEGMENTS = 60;
 const MAX_BREAKS = 30;
@@ -43,13 +43,10 @@ export function breakAnnouncement(descriptions: string[], optionCount: number): 
 
 /**
  * Recovery request: only structure (no names, no owners), remaining segments, and the breaks.
- * @example recoveryInput(segments, breaks, constraints, weights, 40).breaks[0]?.reason
+ * @example recoveryInput({ segments, breaks, constraints, weights }, 40).breaks[0]?.reason
  */
 export function recoveryInput(
-  segments: Segment[],
-  breaks: Break[],
-  constraints: GuestConstraint[],
-  weights: PriorityWeights,
+  { segments, breaks, constraints, weights }: RecoveryCtx,
   nowOffsetMin: number,
 ): AiInput<'recovery'> {
   return {
@@ -75,4 +72,25 @@ export function recoveryInput(
     weights,
     nowOffsetMin: Math.max(0, Math.min(1440, Math.round(nowOffsetMin))),
   };
+}
+
+/**
+ * Announcement after a delay is applied: what changed, and what's next on the clock.
+ * @example appliedMessage('Quick fix', segments, startsAt) // "Applied: Quick fix. Next: Cake at 13:40. Cue cards updated."
+ */
+export function appliedMessage(label: string | undefined, segments: Segment[], startsAt: string) {
+  const next = segments
+    .filter((s) => s.status === 'upcoming')
+    .sort((a, b) => a.offsetMin - b.offsetMin)[0];
+  const what = label ? `Applied: ${label}.` : 'Delay applied without changes.';
+  const then = next ? ` Next: ${next.title} at ${clock(startsAt, next.offsetMin)}.` : '';
+  return `${what}${then} Cue cards updated.`;
+}
+
+/** Plain-language descriptions of every break, in the same order as `ctx.breaks`. */
+export function describeBreaks(ctx: RecoveryCtx, startsAt: string): string[] {
+  return ctx.breaks.map((b) => {
+    const c = ctx.constraints.find((x) => x.id === b.constraintId);
+    return c ? describeBreak(c, ctx.segments, startsAt, b.byMin) : '';
+  });
 }

@@ -2,10 +2,15 @@ import { useState } from 'react';
 import { callAi } from '../../ai/client';
 import { useAnnounce } from '../../components/ui/LiveRegion';
 import { advance, applyDelay, settle } from '../../engine/liveShift';
-import { deterministicRecovery, rankRecovery, type RankedRecovery } from '../../engine/recovery';
+import {
+  deterministicRecovery,
+  rankRecovery,
+  type RankedRecovery,
+  type RecoveryCtx,
+} from '../../engine/recovery';
 import type { Segment } from '../../shared/schemas';
 import { useStore } from '../../store';
-import { breakAnnouncement, clock, describeBreak, recoveryInput } from './liveLogic';
+import { appliedMessage, breakAnnouncement, describeBreaks, recoveryInput } from './liveLogic';
 
 export type Pending = {
   delay: number;
@@ -17,20 +22,29 @@ export type Pending = {
 };
 
 const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
+const MAX_LOG = 200;
+
+/** Save shifted segments and append a delay-log entry. */
+function commit(segments: Segment[], minutes: number, note: string) {
+  const { runSheet: sheet, setRunSheet } = useStore.getState();
+  if (!sheet) return;
+  const entry = { at: new Date().toISOString(), minutes, note: note.slice(0, 200) };
+  setRunSheet({ ...sheet, segments, delayLog: [...sheet.delayLog, entry].slice(-MAX_LOG) });
+}
+
+/** AI options, validated and ranked by the engine; the Quick fix when the AI has nothing usable. */
+async function aiRecovery(ctx: RecoveryCtx, now: number, quick: RankedRecovery[]) {
+  const ai = await callAi('recovery', recoveryInput(ctx, now));
+  const ranked = ai.ok ? rankRecovery(ai.data.options, ctx) : [];
+  return ranked.length
+    ? { options: ranked, source: 'ai' as const }
+    : { options: quick, source: 'quick' as const };
+}
 
 /** Delay → shift → (if guest constraints break) AI recovery, validated + ranked; offline Quick fix. */
 export function useLiveControl(now: number) {
   const announce = useAnnounce();
   const [pending, setPending] = useState<Pending>();
-
-  const commit = (segments: Segment[], delay: number, note: string) => {
-    const sheet = useStore.getState().runSheet;
-    if (!sheet) return;
-    const entry = { at: new Date().toISOString(), minutes: delay, note: note.slice(0, 200) };
-    useStore
-      .getState()
-      .setRunSheet({ ...sheet, segments, delayLog: [...sheet.delayLog, entry].slice(-200) });
-  };
 
   const delay = async (minutes: number) => {
     const { runSheet: sheet, event } = useStore.getState();
@@ -40,69 +54,29 @@ export function useLiveControl(now: number) {
       commit(shift.segments, minutes, `Running ${minutes} min late`);
       return announce(`Schedule shifted by ${minutes} minutes. No conflicts.`);
     }
-    const descriptions = shift.breaks.map((b) => {
-      const c = sheet.constraints.find((x) => x.id === b.constraintId);
-      return c ? describeBreak(c, shift.segments, event.startsAt, b.byMin) : '';
-    });
-    const ctx = {
-      segments: shift.segments,
-      constraints: sheet.constraints,
-      weights: event.weights,
-      breaks: shift.breaks,
-    };
+    const ctx = { ...shift, constraints: sheet.constraints, weights: event.weights };
+    const descriptions = describeBreaks(ctx, event.startsAt);
     const quick = deterministicRecovery(ctx);
+    const base = { delay: minutes, segments: shift.segments, descriptions };
     const quickOptions = quick.ok ? [quick.option] : [];
-    setPending({
-      delay: minutes,
-      segments: shift.segments,
-      descriptions,
-      options: quickOptions,
-      source: 'quick',
-      loading: isOnline(),
-    });
+    setPending({ ...base, options: quickOptions, source: 'quick', loading: isOnline() });
     if (!isOnline())
       return announce(breakAnnouncement(descriptions, quickOptions.length), 'assertive');
-
-    const ai = await callAi(
-      'recovery',
-      recoveryInput(shift.segments, shift.breaks, sheet.constraints, event.weights, now),
-    );
-    const ranked = ai.ok ? rankRecovery(ai.data.options, ctx) : [];
-    const options = ranked.length ? ranked : quickOptions;
-    setPending({
-      delay: minutes,
-      segments: shift.segments,
-      descriptions,
-      options,
-      source: ranked.length ? 'ai' : 'quick',
-      loading: false,
-    });
-    announce(breakAnnouncement(descriptions, options.length), 'assertive');
+    const result = await aiRecovery(ctx, now, quickOptions);
+    setPending({ ...base, ...result, loading: false });
+    announce(breakAnnouncement(descriptions, result.options.length), 'assertive');
   };
 
   const apply = (option: RankedRecovery | undefined) => {
     if (!pending) return;
     const segments = option ? option.segments : pending.segments;
-    commit(
-      segments,
-      pending.delay,
-      option
-        ? `Running ${pending.delay} min late — ${option.label}`
-        : `Running ${pending.delay} min late — kept as is`,
+    const late = `Running ${pending.delay} min late`;
+    commit(segments, pending.delay, `${late} — ${option ? option.label : 'kept as is'}`);
+    const { snapshot, event } = useStore.getState();
+    snapshot(
+      option ? `Recovery applied: ${option.label}` : `Delay of ${pending.delay} min applied`,
     );
-    useStore
-      .getState()
-      .snapshot(
-        option ? `Recovery applied: ${option.label}` : `Delay of ${pending.delay} min applied`,
-      );
-    const startsAt = useStore.getState().event?.startsAt ?? '';
-    const next = segments
-      .filter((s) => s.status === 'upcoming')
-      .sort((a, b) => a.offsetMin - b.offsetMin)[0];
-    announce(
-      `${option ? `Applied: ${option.label}.` : 'Delay applied without changes.'}${next ? ` Next: ${next.title} at ${clock(startsAt, next.offsetMin)}.` : ''} Cue cards updated.`,
-      'assertive',
-    );
+    announce(appliedMessage(option?.label, segments, event?.startsAt ?? ''), 'assertive');
     setPending(undefined);
   };
 

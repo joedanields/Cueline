@@ -23,7 +23,10 @@ export default tseslint.config(
       ...jsxA11y.configs.strict.rules,
       'react/no-danger': 'error',
       // Labels often wrap their control with text in nested elements (radio cards).
-      'jsx-a11y/label-has-associated-control': ['error', { assert: 'either', depth: 3 }],
+      'jsx-a11y/label-has-associated-control': [
+        'error',
+        { assert: 'either', depth: 3, controlComponents: ['OwnerSelect'] },
+      ],
       // APG: tab panels and scrollable regions may be focusable.
       'jsx-a11y/no-noninteractive-tabindex': ['error', { tags: [], roles: ['tabpanel', 'region'] }],
       'react/jsx-no-target-blank': 'error',
@@ -46,6 +49,29 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
       ],
     },
+  },
+  {
+    // CLAUDE.md §5: files ≤ ~200 lines, functions ≤ ~40 lines. Enforced, not just documented.
+    files: ['src/**/*.{ts,tsx}', 'functions/**/*.ts'],
+    rules: {
+      'max-lines': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['error', { max: 40, skipBlankLines: true, skipComments: true }],
+      complexity: ['error', 10],
+      'max-depth': ['error', 3],
+      'max-params': ['error', 4],
+    },
+  },
+  {
+    // Components and hooks are mostly declarative markup / wiring; they get a looser line budget.
+    files: ['src/**/*.tsx', 'src/**/use*.ts'],
+    rules: {
+      'max-lines-per-function': ['error', { max: 80, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    // Tests read best as one describe block per unit; demo data is a fixture, not logic.
+    files: ['**/*.test.{ts,tsx}', 'tests/**', 'src/data/**'],
+    rules: { 'max-lines': 'off', 'max-lines-per-function': 'off', complexity: 'off' },
   },
   {
     // Route screens are lazy-loaded and config files require default exports.

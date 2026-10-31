@@ -1,44 +1,38 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../../../components/ui/Button';
-import { FieldShell, TextAreaField, inputClass } from '../../../components/ui/Field';
+import { TextAreaField } from '../../../components/ui/Field';
 import type { GuestLine } from '../../../lib/pseudonymize';
-import { parseCsvGuests, parsePastedLines } from '../guestImport';
+import { parsePastedLines } from '../guestImport';
 import { useGuestImport } from '../useGuestImport';
+import { CsvUpload } from './CsvUpload';
+import { ImportError } from './ImportError';
 
-const PLACEHOLDER =
-  'Grandpa — birthday boy, diabetic, uses a walker\nRaman family (4) — 2 kids under 6, vegetarian\nPriya, flying in from Delhi';
+const PLACEHOLDER = [
+  'Grandpa — birthday boy, diabetic, uses a walker',
+  'Raman family (4) — 2 kids under 6, vegetarian',
+  'Priya, flying in from Delhi',
+].join('\n');
 
 /** Paste or CSV → Guest Lens. Errors move focus to Retry; adding without AI is always possible. */
 export function ImportPanel() {
   const { analyse, addWithoutAi, status, error, retry } = useGuestImport();
   const [text, setText] = useState('');
   const [pending, setPending] = useState<GuestLine[]>([]);
-  const [fileError, setFileError] = useState<string>();
-  const retryRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (status === 'error') retryRef.current?.focus();
-  }, [status]);
-
+  const busy = status === 'loading';
+  const clear = () => {
+    setText('');
+    setPending([]);
+  };
   const run = async (lines: GuestLine[]) => {
     if (lines.length === 0) return;
     setPending(lines);
-    if (await analyse(lines)) {
-      setText('');
-      setPending([]);
-    }
+    if (await analyse(lines)) clear();
+  };
+  const addPlain = (lines: GuestLine[]) => {
+    addWithoutAi(lines);
+    clear();
   };
 
-  const onFile = async (file: File | undefined) => {
-    setFileError(undefined);
-    if (!file) return;
-    const parsed = parseCsvGuests(await file.text());
-    if ('error' in parsed) return setFileError(parsed.error);
-    if (parsed.length === 0) return setFileError('No guest names found in that file.');
-    await run(parsed);
-  };
-
-  const busy = status === 'loading';
   return (
     <section aria-labelledby="import-heading" className="card space-y-4">
       <h2 id="import-heading">Add guests</h2>
@@ -61,30 +55,11 @@ export function ImportPanel() {
         >
           Analyse with AI
         </Button>
-        <Button
-          disabled={!text.trim() || busy}
-          onClick={() => {
-            addWithoutAi(parsePastedLines(text));
-            setText('');
-          }}
-        >
+        <Button disabled={!text.trim() || busy} onClick={() => addPlain(parsePastedLines(text))}>
           Add without AI
         </Button>
       </div>
-      <FieldShell
-        id="guest-csv"
-        label="Or upload a CSV file (name column plus notes)"
-        error={fileError}
-      >
-        <input
-          id="guest-csv"
-          type="file"
-          accept=".csv,text/csv"
-          className={inputClass}
-          disabled={busy}
-          onChange={(e) => void onFile(e.target.files?.[0])}
-        />
-      </FieldShell>
+      <CsvUpload disabled={busy} onLines={(lines) => void run(lines)} />
       <div aria-live="off" className="min-h-[3rem]">
         {busy ? (
           <p className="text-muted">
@@ -92,26 +67,12 @@ export function ImportPanel() {
           </p>
         ) : null}
         {status === 'error' && error ? (
-          <div className="space-y-2 rounded border-2 border-danger p-3">
-            <p>
-              <span aria-hidden="true">⚠ </span>
-              {error.message}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button ref={retryRef} onClick={() => void retry()}>
-                Retry
-              </Button>
-              <Button
-                onClick={() => {
-                  addWithoutAi(pending);
-                  setPending([]);
-                  setText('');
-                }}
-              >
-                Add {pending.length} guests without AI
-              </Button>
-            </div>
-          </div>
+          <ImportError
+            message={error.message}
+            count={pending.length}
+            onRetry={() => void retry()}
+            onAddWithoutAi={() => addPlain(pending)}
+          />
         ) : null}
       </div>
     </section>

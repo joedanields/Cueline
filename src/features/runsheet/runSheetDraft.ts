@@ -49,15 +49,138 @@ export function runSheetFromDraft(out: Draft, helpers: Helper[]): RunSheet {
   return { segments, constraints, delayLog: [] };
 }
 
-type Spec = [
-  key: string,
-  title: string,
-  minutes: number,
-  min: number,
-  priority: Segment['priority'],
-  optional: boolean,
-  cue: string,
+type Spec = Pick<Segment, 'title' | 'priority' | 'optional' | 'cue'> & {
+  key: string;
+  minutes: number;
+  min: number;
+  /** Only included when lunch or dinner is served. */
+  meal?: boolean;
+};
+
+const FALLBACK_SPECS: Spec[] = [
+  {
+    key: 'welcome',
+    title: 'Welcome and seating',
+    minutes: 30,
+    min: 15,
+    priority: 'comfort',
+    optional: false,
+    cue: 'Greet guests; seat those with access needs first.',
+  },
+  {
+    key: 'meal',
+    title: 'Main meal',
+    minutes: 60,
+    min: 40,
+    priority: 'food',
+    optional: false,
+    cue: 'Serve seniors and special diets first.',
+    meal: true,
+  },
+  {
+    key: 'cake',
+    title: 'Cake and speeches',
+    minutes: 30,
+    min: 15,
+    priority: 'photos',
+    optional: false,
+    cue: 'Gather everyone; keep speeches short.',
+  },
+  {
+    key: 'activities',
+    title: 'Games and activities',
+    minutes: 45,
+    min: 15,
+    priority: 'entertainment',
+    optional: true,
+    cue: 'Run activities away from the quiet zone.',
+  },
+  {
+    key: 'farewell',
+    title: 'Farewell',
+    minutes: 20,
+    min: 10,
+    priority: 'comfort',
+    optional: false,
+    cue: 'Help seniors and families to their transport first.',
+  },
 ];
+
+/** Planned lengths may stretch or shrink to fit the event, but only within these bounds. */
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 2;
+
+type ConstraintRule = {
+  need: string;
+  segmentId: string;
+  /** Allowed slack after the planned start (or end, for must_end_before), in minutes. */
+  graceMin: number;
+} & Pick<GuestConstraint, 'id' | 'kind' | 'reason' | 'needGroup' | 'severity'>;
+
+const FALLBACK_RULES: ConstraintRule[] = [
+  {
+    id: 'c_senior_meal',
+    need: 'age:senior',
+    segmentId: 's_meal',
+    kind: 'must_start_before',
+    graceMin: 15,
+    reason: 'Seniors eat on time',
+    needGroup: 'senior',
+    severity: 'hard',
+  },
+  {
+    id: 'c_diabetic_meal',
+    need: 'diet:diabetic_friendly',
+    segmentId: 's_meal',
+    kind: 'must_start_before',
+    graceMin: 20,
+    reason: 'Diabetic guests need regular meal times',
+    needGroup: 'diabetic_friendly',
+    severity: 'hard',
+  },
+  {
+    id: 'c_kids',
+    need: 'age:child',
+    segmentId: 's_activities',
+    kind: 'must_end_before',
+    graceMin: 15,
+    reason: 'Kids’ activities before they tire',
+    needGroup: 'child',
+    severity: 'soft',
+  },
+];
+
+/** Lay the specs out back-to-back, scaled to the event length and clamped to each minimum. */
+function layoutSegments(specs: Spec[], durationMin: number): Segment[] {
+  const planned = specs.reduce((n, s) => n + s.minutes, 0);
+  const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, durationMin / planned));
+  let offset = 0;
+  return specs.map(({ key, minutes, min, meal: _meal, ...rest }) => {
+    const length = Math.min(MAX_SEGMENT, Math.max(min, Math.round(minutes * scale)));
+    const seg: Segment = {
+      ...rest,
+      id: `s_${key}`,
+      offsetMin: offset,
+      durationMin: length,
+      minDurationMin: min,
+      locked: false,
+      status: 'upcoming',
+    };
+    offset += length;
+    return seg;
+  });
+}
+
+/** One constraint per rule whose need group is present and whose segment exists. */
+function constraintsFor(segments: Segment[], needs: Record<string, number>): GuestConstraint[] {
+  return FALLBACK_RULES.flatMap(({ need, graceMin, ...rule }) => {
+    const seg = segments.find((s) => s.id === rule.segmentId);
+    if (!seg || (needs[need] ?? 0) <= 0) return [];
+    const anchor =
+      rule.kind === 'must_end_before' ? seg.offsetMin + seg.durationMin : seg.offsetMin;
+    return [{ ...rule, minutesFromStart: anchor + graceMin }];
+  });
+}
 
 /**
  * Deterministic run sheet when the AI is unavailable: welcome → meal → cake → activities → farewell,
@@ -70,103 +193,9 @@ export function fallbackRunSheet(
   needs: Record<string, number>,
 ): RunSheet {
   const hasMeal = meals.includes('lunch') || meals.includes('dinner');
-  const specs: Spec[] = [
-    [
-      'welcome',
-      'Welcome and seating',
-      30,
-      15,
-      'comfort',
-      false,
-      'Greet guests; seat those with access needs first.',
-    ],
-    ...(hasMeal
-      ? [
-          [
-            'meal',
-            'Main meal',
-            60,
-            40,
-            'food',
-            false,
-            'Serve seniors and special diets first.',
-          ] as Spec,
-        ]
-      : []),
-    ['cake', 'Cake and speeches', 30, 15, 'photos', false, 'Gather everyone; keep speeches short.'],
-    [
-      'activities',
-      'Games and activities',
-      45,
-      15,
-      'entertainment',
-      true,
-      'Run activities away from the quiet zone.',
-    ],
-    [
-      'farewell',
-      'Farewell',
-      20,
-      10,
-      'comfort',
-      false,
-      'Help seniors and families to their transport first.',
-    ],
-  ];
-  const planned = specs.reduce((n, s) => n + s[2], 0);
-  const scale = Math.max(0.5, Math.min(2, durationMin / planned));
-  let offset = 0;
-  const segments: Segment[] = specs.map(([key, title, minutes, min, priority, optional, cue]) => {
-    const durationMin = Math.min(MAX_SEGMENT, Math.max(min, Math.round(minutes * scale)));
-    const seg: Segment = {
-      id: `s_${key}`,
-      title,
-      offsetMin: offset,
-      durationMin,
-      minDurationMin: min,
-      cue,
-      priority,
-      optional,
-      locked: false,
-      status: 'upcoming',
-    };
-    offset += durationMin;
-    return seg;
-  });
-  const meal = segments.find((s) => s.id === 's_meal');
-  const constraints: GuestConstraint[] = [];
-  if (meal && (needs['age:senior'] ?? 0) > 0)
-    constraints.push({
-      id: 'c_senior_meal',
-      kind: 'must_start_before',
-      segmentId: meal.id,
-      minutesFromStart: meal.offsetMin + 15,
-      reason: 'Seniors eat on time',
-      needGroup: 'senior',
-      severity: 'hard',
-    });
-  if (meal && (needs['diet:diabetic_friendly'] ?? 0) > 0)
-    constraints.push({
-      id: 'c_diabetic_meal',
-      kind: 'must_start_before',
-      segmentId: meal.id,
-      minutesFromStart: meal.offsetMin + 20,
-      reason: 'Diabetic guests need regular meal times',
-      needGroup: 'diabetic_friendly',
-      severity: 'hard',
-    });
-  const act = segments.find((s) => s.id === 's_activities');
-  if (act && (needs['age:child'] ?? 0) > 0)
-    constraints.push({
-      id: 'c_kids',
-      kind: 'must_end_before',
-      segmentId: act.id,
-      minutesFromStart: act.offsetMin + act.durationMin + 15,
-      reason: 'Kids’ activities before they tire',
-      needGroup: 'child',
-      severity: 'soft',
-    });
-  return { segments, constraints, delayLog: [] };
+  const specs = FALLBACK_SPECS.filter((s) => hasMeal || !s.meal);
+  const segments = layoutSegments(specs, durationMin);
+  return { segments, constraints: constraintsFor(segments, needs), delayLog: [] };
 }
 
 /**

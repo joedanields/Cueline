@@ -22,7 +22,8 @@ export type RankedRecovery = RecoveryOption & {
 
 export type EvaluateResult = { ok: true; ranked: RankedRecovery } | { ok: false; reason: string };
 
-type Ctx = {
+/** Everything recovery needs: the shifted segments, their guest constraints and current breaks. */
+export type RecoveryCtx = {
   segments: Segment[];
   constraints: GuestConstraint[];
   weights: PriorityWeights;
@@ -38,7 +39,7 @@ const severityOf = (constraints: GuestConstraint[], id: string) =>
  * score = hardFixed×100 + softFixed×20 − Σ weight[priority] × minutes lost.
  * @example evaluateOption(option, ctx).ok
  */
-export function evaluateOption(option: RecoveryOption, ctx: Ctx): EvaluateResult {
+export function evaluateOption(option: RecoveryOption, ctx: RecoveryCtx): EvaluateResult {
   let segs = ctx.segments;
   let lost = 0;
   let weighted = 0;
@@ -79,7 +80,7 @@ export function evaluateOption(option: RecoveryOption, ctx: Ctx): EvaluateResult
  * then fewer weighted minutes lost. Invalid options are dropped.
  * @example rankRecovery(aiOptions, ctx)[0]?.label
  */
-export function rankRecovery(options: RecoveryOption[], ctx: Ctx): RankedRecovery[] {
+export function rankRecovery(options: RecoveryOption[], ctx: RecoveryCtx): RankedRecovery[] {
   return options
     .map((o) => evaluateOption(o, ctx))
     .flatMap((r) => (r.ok ? [r.ranked] : []))
@@ -93,87 +94,92 @@ export function rankRecovery(options: RecoveryOption[], ctx: Ctx): RankedRecover
 
 export type FallbackResult = { ok: true; option: RankedRecovery } | { ok: false; reason: string };
 
+const NO_SAFE_FIX: FallbackResult = {
+  ok: false,
+  reason: 'No safe automatic fix. Adjust the run sheet manually or accept the delay.',
+};
+
+/** Hard breaks first, so the shared op budget goes to the guest needs that matter most. */
+function hardFirst(ctx: RecoveryCtx) {
+  const soft = (id: string) => Number(severityOf(ctx.constraints, id) === 'soft');
+  return [...ctx.breaks].sort((a, b) => soft(a.constraintId) - soft(b.constraintId));
+}
+
+const isBeforeConstraint = (c: GuestConstraint | undefined): c is GuestConstraint =>
+  c?.kind === 'must_start_before' || c?.kind === 'must_end_before';
+
+/** Shorten-then-drop ops for every broken before-constraint, evaluated as one option. */
+function shortenOption(ctx: RecoveryCtx) {
+  const ops: RecoveryOp[] = [];
+  let segs = ctx.segments;
+  for (const brk of hardFirst(ctx)) {
+    const c = ctx.constraints.find((x) => x.id === brk.constraintId);
+    if (isBeforeConstraint(c)) segs = reduceBefore(segs, c, ctx, ops);
+  }
+  if (!ops.length) return undefined;
+  const rationale = 'Shortens the lowest-priority segments first so guest needs stay on time.';
+  const r = evaluateOption({ label: 'Quick fix', rationale, ops: ops.slice(0, MAX_OPS) }, ctx);
+  return r.ok ? r.ranked : undefined;
+}
+
 /**
  * Offline "Quick fix": for each broken before-constraint, shorten the lowest-weighted earlier
  * segments, then drop optional ones, then try moving the protected segment earlier.
  * Always returns a valid option or an explicit "no safe fix".
  * @example deterministicRecovery(ctx) // { ok: true, option: { label: 'Quick fix', ... } }
  */
-export function deterministicRecovery(ctx: Ctx): FallbackResult {
-  const ops: RecoveryOp[] = [];
-  let segs = ctx.segments;
-  const ordered = [...ctx.breaks].sort(
-    (a, b) =>
-      Number(severityOf(ctx.constraints, a.constraintId) === 'soft') -
-      Number(severityOf(ctx.constraints, b.constraintId) === 'soft'),
-  );
-  for (const brk of ordered) {
-    const c = ctx.constraints.find((x) => x.id === brk.constraintId);
-    if (!c || (c.kind !== 'must_start_before' && c.kind !== 'must_end_before')) continue;
-    segs = reduceBefore(segs, c, ctx, ops);
-  }
-  const quick = {
-    label: 'Quick fix',
-    rationale: 'Shortens the lowest-priority segments first so guest needs stay on time.',
-  };
-  const shortened = ops.length
-    ? evaluateOption({ ...quick, ops: ops.slice(0, MAX_OPS) }, ctx)
-    : undefined;
-  if (shortened?.ok && shortened.ranked.hardRemaining === 0)
-    return { ok: true, option: shortened.ranked };
+export function deterministicRecovery(ctx: RecoveryCtx): FallbackResult {
+  const shortened = shortenOption(ctx);
+  if (shortened?.hardRemaining === 0) return { ok: true, option: shortened };
   const moved = tryMoveEarlier(ctx);
   if (moved) return { ok: true, option: moved };
-  if (shortened?.ok && shortened.ranked.breaksFixed > 0)
-    return { ok: true, option: shortened.ranked };
-  return {
-    ok: false,
-    reason: 'No safe automatic fix. Adjust the run sheet manually or accept the delay.',
-  };
+  if (shortened && shortened.breaksFixed > 0) return { ok: true, option: shortened };
+  return NO_SAFE_FIX;
 }
 
 function remainingBreak(segs: Segment[], c: GuestConstraint): number {
   return findBreaks(segs, [c])[0]?.byMin ?? 0;
 }
 
+type Pass = { segs: Segment[]; c: GuestConstraint; ctx: RecoveryCtx; ops: RecoveryOp[] };
+
+/** Apply `op` only if it is allowed and actually reduces the break; returns the new segments. */
+function tryOp(p: Pass, op: RecoveryOp): Segment[] {
+  if (!checkOp(op, p.segs, p.ctx.constraints).ok) return p.segs;
+  const next = applyOp(p.segs, op);
+  if (remainingBreak(next, p.c) >= remainingBreak(p.segs, p.c)) return p.segs;
+  p.ops.push(op);
+  return next;
+}
+
 function reduceBefore(
   start: Segment[],
   c: GuestConstraint,
-  ctx: Ctx,
+  ctx: RecoveryCtx,
   ops: RecoveryOp[],
 ): Segment[] {
-  let segs = start;
-  const target = segs.find((s) => s.id === c.segmentId);
+  const target = start.find((s) => s.id === c.segmentId);
   // Shortening earlier segments only helps if the protected segment can move earlier.
-  if (!target || target.locked || target.status !== 'upcoming') return segs;
-  const earlier = (s: Segment) => s.offsetMin < target.offsetMin && s.id !== target.id;
-  const byWeight = (a: Segment, b: Segment) =>
-    ctx.weights[a.priority] - ctx.weights[b.priority] || a.offsetMin - b.offsetMin;
-  for (const s of segs.filter(earlier).sort(byWeight)) {
-    const need = remainingBreak(segs, c);
+  if (!target || target.locked || target.status !== 'upcoming') return start;
+  const candidates = start
+    .filter((s) => s.offsetMin < target.offsetMin && s.id !== target.id)
+    .sort((a, b) => ctx.weights[a.priority] - ctx.weights[b.priority] || a.offsetMin - b.offsetMin);
+  const p: Pass = { segs: start, c, ctx, ops };
+  const done = () => remainingBreak(p.segs, c) <= 0 || ops.length >= MAX_OPS;
+  for (const s of candidates) {
+    if (done()) break;
     const room = s.durationMin - s.minDurationMin;
-    if (need <= 0 || ops.length >= MAX_OPS) break;
-    const op: RecoveryOp = { op: 'shorten', segmentId: s.id, byMin: Math.min(room, need) };
-    if (room <= 0 || !checkOp(op, segs, ctx.constraints).ok) continue;
-    const next = applyOp(segs, op);
-    if (remainingBreak(next, c) < need) {
-      ops.push(op);
-      segs = next;
-    }
+    const byMin = Math.min(room, remainingBreak(p.segs, c));
+    if (room > 0) p.segs = tryOp(p, { op: 'shorten', segmentId: s.id, byMin });
   }
-  for (const s of segs.filter(earlier).sort(byWeight)) {
-    if (remainingBreak(segs, c) <= 0 || ops.length >= MAX_OPS) break;
-    const op: RecoveryOp = { op: 'drop', segmentId: s.id };
-    if (!checkOp(op, segs, ctx.constraints).ok) continue;
-    const next = applyOp(segs, op);
-    if (remainingBreak(next, c) < remainingBreak(segs, c)) {
-      ops.push(op);
-      segs = next;
-    }
+  for (const s of candidates) {
+    if (done()) break;
+    p.segs = tryOp(p, { op: 'drop', segmentId: s.id });
   }
-  return segs;
+  return p.segs;
 }
 
-function tryMoveEarlier(ctx: Ctx): RankedRecovery | undefined {
+function tryMoveEarlier(ctx: RecoveryCtx): RankedRecovery | undefined {
   const firstUpcoming = [...ctx.segments]
     .filter((s) => s.status === 'upcoming' && !s.locked)
     .sort((a, b) => a.offsetMin - b.offsetMin)[0];

@@ -21,40 +21,53 @@ export function parsePastedLines(text: string): GuestLine[] {
     .map(splitGuestLine);
 }
 
+type CsvState = { rows: string[][]; row: string[]; field: string; quoted: boolean };
+
+function endField(p: CsvState) {
+  p.row.push(p.field);
+  p.field = '';
+}
+
+function endRow(p: CsvState) {
+  endField(p);
+  p.rows.push(p.row);
+  p.row = [];
+}
+
+/** Inside quotes: `""` is a literal quote, a lone `"` closes the field. Returns the new index. */
+function stepQuoted(p: CsvState, text: string, i: number): number {
+  const ch = text[i];
+  if (ch === '"' && text[i + 1] === '"') {
+    p.field += '"';
+    return i + 1;
+  }
+  if (ch === '"') p.quoted = false;
+  else p.field += ch;
+  return i;
+}
+
+/** Consume one character; returns the index of the last character consumed (CRLF = 2). */
+function step(p: CsvState, text: string, i: number): number {
+  if (p.quoted) return stepQuoted(p, text, i);
+  const ch = text[i];
+  if (ch === '"') p.quoted = true;
+  else if (ch === ',') endField(p);
+  else if (ch === '\n' || ch === '\r') {
+    endRow(p);
+    return ch === '\r' && text[i + 1] === '\n' ? i + 1 : i;
+  } else p.field += ch;
+  return i;
+}
+
 /**
  * Minimal RFC 4180 CSV parser (quoted fields, escaped quotes, CRLF). Size and row caps apply.
  * @example parseCsvRows('a,"b,c"\n1,2') // [['a','b,c'],['1','2']]
  */
 export function parseCsvRows(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = '';
-  let quoted = false;
-  for (let i = 0; i < text.length && rows.length < MAX_CSV_ROWS + 1; i++) {
-    const ch = text[i];
-    if (quoted) {
-      if (ch === '"' && text[i + 1] === '"') {
-        field += '"';
-        i++;
-      } else if (ch === '"') quoted = false;
-      else field += ch;
-    } else if (ch === '"') quoted = true;
-    else if (ch === ',') {
-      row.push(field);
-      field = '';
-    } else if (ch === '\n' || ch === '\r') {
-      if (ch === '\r' && text[i + 1] === '\n') i++;
-      row.push(field);
-      rows.push(row);
-      row = [];
-      field = '';
-    } else field += ch;
-  }
-  if (field || row.length) {
-    row.push(field);
-    rows.push(row);
-  }
-  return rows.filter((r) => r.some((c) => c.trim()));
+  const p: CsvState = { rows: [], row: [], field: '', quoted: false };
+  for (let i = 0; i < text.length && p.rows.length < MAX_CSV_ROWS + 1; i++) i = step(p, text, i);
+  if (p.field || p.row.length) endRow(p);
+  return p.rows.filter((r) => r.some((c) => c.trim()));
 }
 
 const NAME_HEADERS = ['name', 'guest', 'guest name', 'full name'];

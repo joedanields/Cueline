@@ -145,6 +145,27 @@ export function toAiAnswers(
 
 export type DraftErrors = Partial<Record<keyof IntakeDraft, string>>;
 
+type Parsed = { start?: Date; end?: Date; amount?: number };
+
+function parseDraft(d: IntakeDraft): Parsed {
+  const start = d.startsAt ? new Date(d.startsAt) : undefined;
+  const end = d.endsAt ? new Date(d.endsAt) : start && addHours(start, DEFAULT_DURATION_HOURS);
+  return { start, end, amount: parseMajorToMinor(d.budgetMajor, d.currency) };
+}
+
+/** Field-level messages for everything required that is missing or inconsistent. */
+function draftErrors(d: IntakeDraft, { start, end, amount }: Parsed): DraftErrors {
+  const checks: [keyof IntakeDraft, boolean, string][] = [
+    ['occasion', !d.occasion.trim(), 'Tell us what you are celebrating.'],
+    ['startsAt', !start || Number.isNaN(start.getTime()), 'Choose when the celebration starts.'],
+    ['endsAt', !!start && !!end && end <= start, 'The end must be after the start.'],
+    ['venueType', !d.venueType, 'Choose a venue type.'],
+    ['budgetMajor', amount === undefined, 'Enter a budget as a number (0 is fine).'],
+    ['mealTypes', d.mealTypes.length === 0, 'Choose at least one thing you will serve.'],
+  ];
+  return Object.fromEntries(checks.filter(([, bad]) => bad).map(([k, , msg]) => [k, msg]));
+}
+
 /**
  * Validate the draft and build the Event. Missing end time defaults to start + 4 h.
  * @example draftToEvent(draft) // { ok: true, event } | { ok: false, errors }
@@ -152,17 +173,9 @@ export type DraftErrors = Partial<Record<keyof IntakeDraft, string>>;
 export function draftToEvent(
   d: IntakeDraft,
 ): { ok: true; event: CelebrationEvent } | { ok: false; errors: DraftErrors } {
-  const errors: DraftErrors = {};
-  const start = d.startsAt ? new Date(d.startsAt) : undefined;
-  const end = d.endsAt ? new Date(d.endsAt) : start && addHours(start, DEFAULT_DURATION_HOURS);
-  const amount = parseMajorToMinor(d.budgetMajor, d.currency);
-  if (!d.occasion.trim()) errors.occasion = 'Tell us what you are celebrating.';
-  if (!start || Number.isNaN(start.getTime()))
-    errors.startsAt = 'Choose when the celebration starts.';
-  if (start && end && end <= start) errors.endsAt = 'The end must be after the start.';
-  if (!d.venueType) errors.venueType = 'Choose a venue type.';
-  if (amount === undefined) errors.budgetMajor = 'Enter a budget as a number (0 is fine).';
-  if (d.mealTypes.length === 0) errors.mealTypes = 'Choose at least one thing you will serve.';
+  const values = parseDraft(d);
+  const errors = draftErrors(d, values);
+  const { start, end, amount } = values;
   if (Object.keys(errors).length > 0 || !start || !end) return { ok: false, errors };
 
   const parsed = EventSchema.safeParse({

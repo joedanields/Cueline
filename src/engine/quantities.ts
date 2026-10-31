@@ -55,6 +55,52 @@ export function eventHours(event: Pick<CelebrationEvent, 'startsAt' | 'endsAt'>)
   return Number.isFinite(ms) && ms > 0 ? ms / (MINUTES_PER_HOUR * 60_000) : 0;
 }
 
+type LineCtx = { eaters: number; hours: number; who: string; event: QuantityInput['event'] };
+type LineBuilder = (ctx: LineCtx) => QuantityLine | undefined;
+
+const line = (item: string, unit: QuantityLine['unit'], amount: number, basis: string) => ({
+  item,
+  unit,
+  amount,
+  basis,
+  manual: false,
+});
+
+const mains: LineBuilder = ({ eaters, who, event }) => {
+  const meals = event.mealTypes.filter((m) => m === 'lunch' || m === 'dinner').length;
+  if (meals === 0) return undefined;
+  const kg = (eaters * MAINS_GRAMS_PER_ADULT * meals * QUANTITY_BUFFER) / GRAMS_PER_KG;
+  const basis = `${who} × ${MAINS_GRAMS_PER_ADULT} g × ${meals} meal(s) + ${BUFFER_PERCENT}%`;
+  return line('Mains', 'kg', ceilTenth(kg), basis);
+};
+
+const snacks: LineBuilder = ({ eaters, hours, who, event }) => {
+  if (!event.mealTypes.includes('snacks')) return undefined;
+  const h = Math.min(hours, SNACK_HOURS_CAP);
+  const pcs = eaters * SNACKS_PER_ADULT_PER_HOUR * h * QUANTITY_BUFFER;
+  const rate = `${SNACKS_PER_ADULT_PER_HOUR}/h × ${fmt(h)} h (max ${SNACK_HOURS_CAP})`;
+  return line('Snacks', 'pcs', ceilWhole(pcs), `${who} × ${rate} + ${BUFFER_PERCENT}%`);
+};
+
+const dessert: LineBuilder = ({ eaters, who, event }) => {
+  if (!event.mealTypes.includes('dessert')) return undefined;
+  const portions = eaters * DESSERT_PORTIONS_PER_ADULT * QUANTITY_BUFFER;
+  const basis = `${who} × ${DESSERT_PORTIONS_PER_ADULT} + ${BUFFER_PERCENT}%`;
+  return line('Dessert', 'portions', ceilWhole(portions), basis);
+};
+
+const drinks: LineBuilder = ({ eaters, hours, who, event }) => {
+  if (!event.mealTypes.includes('drinks')) return undefined;
+  const outdoor = event.venueType === 'outdoor';
+  const uplift = outdoor ? OUTDOOR_DRINK_UPLIFT : 1;
+  const litres = eaters * DRINK_LITRES_PER_ADULT_PER_HOUR * hours * uplift * QUANTITY_BUFFER;
+  const rate = `${DRINK_LITRES_PER_ADULT_PER_HOUR} L/h × ${fmt(hours)} h`;
+  const heat = outdoor ? ` × ${OUTDOOR_DRINK_UPLIFT} outdoor` : '';
+  return line('Drinks', 'L', ceilTenth(litres), `${who} × ${rate}${heat} + ${BUFFER_PERCENT}%`);
+};
+
+const BUILDERS: LineBuilder[] = [mains, snacks, dessert, drinks];
+
 /**
  * Food and drink quantities by age band × meal type × duration. Buffer applied once, rounded up.
  * A user override replaces the computed amount and is labelled manual.
@@ -66,54 +112,15 @@ export function computeQuantities({
   overrides = {},
 }: QuantityInput): QuantityLine[] {
   const eaters = adultEquivalents(byBand);
-  const hours = eventHours(event);
-  const meals = event.mealTypes.filter((m) => m === 'lunch' || m === 'dinner').length;
-  const who = `${fmt(eaters)} adult-equivalents`;
-  const lines: QuantityLine[] = [];
-
-  if (meals > 0) {
-    const kg = (eaters * MAINS_GRAMS_PER_ADULT * meals * QUANTITY_BUFFER) / GRAMS_PER_KG;
-    lines.push({
-      item: 'Mains',
-      unit: 'kg',
-      amount: ceilTenth(kg),
-      manual: false,
-      basis: `${who} × ${MAINS_GRAMS_PER_ADULT} g × ${meals} meal(s) + ${BUFFER_PERCENT}%`,
-    });
-  }
-  if (event.mealTypes.includes('snacks')) {
-    const snackHours = Math.min(hours, SNACK_HOURS_CAP);
-    lines.push({
-      item: 'Snacks',
-      unit: 'pcs',
-      manual: false,
-      amount: ceilWhole(eaters * SNACKS_PER_ADULT_PER_HOUR * snackHours * QUANTITY_BUFFER),
-      basis: `${who} × ${SNACKS_PER_ADULT_PER_HOUR}/h × ${fmt(snackHours)} h (max ${SNACK_HOURS_CAP}) + ${BUFFER_PERCENT}%`,
-    });
-  }
-  if (event.mealTypes.includes('dessert')) {
-    lines.push({
-      item: 'Dessert',
-      unit: 'portions',
-      manual: false,
-      amount: ceilWhole(eaters * DESSERT_PORTIONS_PER_ADULT * QUANTITY_BUFFER),
-      basis: `${who} × ${DESSERT_PORTIONS_PER_ADULT} + ${BUFFER_PERCENT}%`,
-    });
-  }
-  if (event.mealTypes.includes('drinks')) {
-    const outdoor = event.venueType === 'outdoor';
-    const uplift = outdoor ? OUTDOOR_DRINK_UPLIFT : 1;
-    lines.push({
-      item: 'Drinks',
-      unit: 'L',
-      manual: false,
-      amount: ceilTenth(
-        eaters * DRINK_LITRES_PER_ADULT_PER_HOUR * hours * uplift * QUANTITY_BUFFER,
-      ),
-      basis: `${who} × ${DRINK_LITRES_PER_ADULT_PER_HOUR} L/h × ${fmt(hours)} h${outdoor ? ' × 1.3 outdoor' : ''} + ${BUFFER_PERCENT}%`,
-    });
-  }
-  return lines.map((line) => applyOverride(line, overrides[line.item]));
+  const ctx: LineCtx = {
+    eaters,
+    hours: eventHours(event),
+    who: `${fmt(eaters)} adult-equivalents`,
+    event,
+  };
+  return BUILDERS.map((build) => build(ctx))
+    .filter((l): l is QuantityLine => l !== undefined)
+    .map((l) => applyOverride(l, overrides[l.item]));
 }
 
 function applyOverride(line: QuantityLine, override: number | undefined): QuantityLine {

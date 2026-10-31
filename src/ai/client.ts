@@ -41,9 +41,44 @@ function kindForStatus(status: number, code: unknown): AiErrorKind {
 
 type CallOptions = { signal?: AbortSignal; timeoutMs?: number; cache?: boolean };
 
+/** An abort signal that fires on timeout or when the caller's own signal aborts. */
+function linkedTimeout(ms: number, outer: AbortSignal | undefined) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  const onAbort = () => ctrl.abort();
+  outer?.addEventListener('abort', onAbort);
+  const dispose = () => {
+    clearTimeout(timer);
+    outer?.removeEventListener('abort', onAbort);
+  };
+  return { signal: ctrl.signal, dispose };
+}
+
+/** POST one task to the proxy and validate `data` with the task's output schema. */
+async function post<T extends AiTaskName>(
+  task: T,
+  input: unknown,
+  signal: AbortSignal,
+): Promise<Result<AiOutput<T>, AiError>> {
+  const res = await fetch(AI_ENDPOINT, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ task, input }),
+    signal,
+  });
+  const body = (await res.json().catch(() => undefined)) as
+    | { data?: unknown; error?: unknown }
+    | undefined;
+  if (!res.ok) return error(kindForStatus(res.status, body?.error));
+  const output = AiSchemas[task].output.safeParse(body?.data);
+  if (!output.success) return error('invalid_response');
+  return { ok: true, data: output.data as AiOutput<T>, cached: false };
+}
+
 /**
  * Call a named AI task through the proxy. Input is validated before sending; the response is
  * validated with the task's output schema before it is returned. Never throws.
+ * @example const r = await callAi('helperBrief', input); if (r.ok) show(r.data.brief);
  */
 export async function callAi<T extends AiTaskName>(
   task: T,
@@ -55,39 +90,31 @@ export async function callAi<T extends AiTaskName>(
   if (!parsedInput.success) return error('bad_request');
   const useCache = opts.cache !== false;
   const key = await cacheKey(task, parsedInput.data);
-  if (useCache) {
-    const hit = schemas.output.safeParse(cacheGet(key));
-    if (hit.success) return { ok: true, data: hit.data as AiOutput<T>, cached: true };
-  }
+  const hit = useCache ? fromCache(task, key) : undefined;
+  if (hit) return hit;
   if (opts.signal?.aborted) return error('aborted');
+  const result = await send(task, parsedInput.data, opts);
+  if (result.ok && useCache) cacheSet(key, result.data);
+  return result;
+}
 
-  const timeout = new AbortController();
-  const timer = setTimeout(
-    () => timeout.abort(),
-    opts.timeoutMs ?? (task === 'recovery' ? RECOVERY_TIMEOUT_MS : CLIENT_TIMEOUT_MS),
-  );
-  const onAbort = () => timeout.abort();
-  opts.signal?.addEventListener('abort', onAbort);
+function fromCache<T extends AiTaskName>(task: T, key: string) {
+  const hit = AiSchemas[task].output.safeParse(cacheGet(key));
+  return hit.success
+    ? { ok: true as const, data: hit.data as AiOutput<T>, cached: true }
+    : undefined;
+}
+
+/** POST with a timeout linked to the caller's signal; maps thrown errors to error kinds. */
+async function send<T extends AiTaskName>(task: T, input: unknown, opts: CallOptions) {
+  const defaultMs = task === 'recovery' ? RECOVERY_TIMEOUT_MS : CLIENT_TIMEOUT_MS;
+  const linked = linkedTimeout(opts.timeoutMs ?? defaultMs, opts.signal);
   try {
-    const res = await fetch(AI_ENDPOINT, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ task, input: parsedInput.data }),
-      signal: timeout.signal,
-    });
-    const body = (await res.json().catch(() => undefined)) as
-      | { data?: unknown; error?: unknown }
-      | undefined;
-    if (!res.ok) return error(kindForStatus(res.status, body?.error));
-    const output = schemas.output.safeParse(body?.data);
-    if (!output.success) return error('invalid_response');
-    if (useCache) cacheSet(key, output.data);
-    return { ok: true, data: output.data as AiOutput<T>, cached: false };
+    return await post(task, input, linked.signal);
   } catch {
     if (opts.signal?.aborted) return error('aborted');
-    return error(timeout.signal.aborted ? 'timeout' : 'network');
+    return error(linked.signal.aborted ? 'timeout' : 'network');
   } finally {
-    clearTimeout(timer);
-    opts.signal?.removeEventListener('abort', onAbort);
+    linked.dispose();
   }
 }

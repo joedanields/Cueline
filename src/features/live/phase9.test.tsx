@@ -104,10 +104,12 @@ describe('run sheet logic', () => {
     ).toMatch(/5 min late/);
     expect(breakAnnouncement(['X.'], 0)).toMatch(/no safe automatic fix/i);
     const input = recoveryInput(
-      segs,
-      [{ constraintId: 'c_1', byMin: 10 }],
-      [makeConstraint()],
-      { food: 1, comfort: 1, decor: 1, entertainment: 1, photos: 1 },
+      {
+        segments: segs,
+        breaks: [{ constraintId: 'c_1', byMin: 10 }],
+        constraints: [makeConstraint()],
+        weights: { food: 1, comfort: 1, decor: 1, entertainment: 1, photos: 1 },
+      },
       40,
     );
     expect(JSON.stringify(input)).not.toContain('h_priya');

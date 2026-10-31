@@ -37,33 +37,47 @@ const defaultDeps: GeminiDeps = {
   random: Math.random,
 };
 
+type Parsed = { task: (typeof TASKS)[keyof typeof TASKS]; input: unknown };
+
+/** JSON-parse the body and validate the envelope and the task's own input schema. */
+function parseRequest(body: string): Parsed | undefined {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(body);
+  } catch {
+    return undefined;
+  }
+  const envelope = AiRequestSchema.safeParse(raw);
+  if (!envelope.success) return undefined;
+  const task = TASKS[envelope.data.task];
+  const input = task.inputSchema.safeParse(envelope.data.input);
+  return input.success ? { task, input: input.data } : undefined;
+}
+
+/** Method, content type, origin and rate limit — cheap checks before reading the body. */
+function preflight(request: Request, env: Env, allow: (ip: string) => boolean) {
+  if (request.method !== 'POST')
+    return json({ error: 'method_not_allowed' }, 405, { allow: 'POST' });
+  const guard = checkContentType(request) ?? checkOrigin(request, env.ALLOWED_ORIGINS);
+  if (guard) return fail(guard.code);
+  if (!allow(request.headers.get('cf-connecting-ip') ?? 'unknown')) return fail('rate_limited');
+  return undefined;
+}
+
 /** Build the POST handler; dependencies are injectable so tests never touch the network. */
 export function createHandler(
   deps: GeminiDeps = defaultDeps,
   allow: (ip: string) => boolean = createRateLimiter(),
 ) {
   return async ({ request, env }: Context): Promise<Response> => {
-    if (request.method !== 'POST')
-      return json({ error: 'method_not_allowed' }, 405, { allow: 'POST' });
-    const guard = checkContentType(request) ?? checkOrigin(request, env.ALLOWED_ORIGINS);
-    if (guard) return fail(guard.code);
-    if (!allow(request.headers.get('cf-connecting-ip') ?? 'unknown')) return fail('rate_limited');
-
+    const rejected = preflight(request, env, allow);
+    if (rejected) return rejected;
     const body = await readBodyCapped(request);
     if (typeof body !== 'string') return fail(body.code);
-    let raw: unknown;
-    try {
-      raw = JSON.parse(body);
-    } catch {
-      return fail('bad_request');
-    }
-    const envelope = AiRequestSchema.safeParse(raw);
-    if (!envelope.success) return fail('bad_request');
-    const task = TASKS[envelope.data.task];
-    const input = task.inputSchema.safeParse(envelope.data.input);
-    if (!input.success) return fail('bad_request');
-
-    const result = await callGemini(env, task, task.buildPrompt(input.data as never), deps);
+    const parsed = parseRequest(body);
+    if (!parsed) return fail('bad_request');
+    const prompt = parsed.task.buildPrompt(parsed.input as never);
+    const result = await callGemini(env, parsed.task, prompt, deps);
     return result.ok ? json({ data: result.data }) : fail(result.code);
   };
 }

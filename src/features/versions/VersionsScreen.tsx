@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { format } from 'date-fns';
+import { useState } from 'react';
 import { Page } from '../../components/ui/Page';
 import { Button } from '../../components/ui/Button';
 import { useAnnounce } from '../../components/ui/LiveRegion';
 import { useStore } from '../../store';
+import { VersionItem } from './VersionItem';
+
+const UNREADABLE = 'That version could not be read, so nothing was changed.';
 
 /** Version history: every significant change is a snapshot; restoring validates it first. */
 export default function VersionsScreen() {
@@ -13,22 +15,19 @@ export default function VersionsScreen() {
   const announce = useAnnounce();
   const [confirming, setConfirming] = useState<string>();
   const [error, setError] = useState<string>();
-  const confirmRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (confirming) confirmRef.current?.focus();
-  }, [confirming]);
 
   const restore = (id: string, reason: string) => {
     snapshot(`Before restoring “${reason}”`.slice(0, 80));
     const ok = restoreVersion(id);
     setConfirming(undefined);
-    if (ok) {
-      setError(undefined);
+    setError(ok ? undefined : UNREADABLE);
+    if (ok)
       announce(`Restored the version “${reason}”. Your previous plan was saved as a version too.`);
-    } else {
-      setError('That version could not be read, so nothing was changed.');
-      announce('That version could not be read, so nothing was changed.', 'assertive');
-    }
+    else announce(UNREADABLE, 'assertive');
+  };
+  const save = () => {
+    snapshot('Saved by you');
+    announce('Version saved.');
   };
 
   return (
@@ -41,14 +40,7 @@ export default function VersionsScreen() {
         <h2 id="save-heading" className="sr-only">
           Save a version
         </h2>
-        <Button
-          onClick={() => {
-            snapshot('Saved by you');
-            announce('Version saved.');
-          }}
-        >
-          Save a version now
-        </Button>
+        <Button onClick={save}>Save a version now</Button>
       </section>
       {error ? (
         <p role="alert" className="card border-danger">
@@ -61,35 +53,14 @@ export default function VersionsScreen() {
       ) : (
         <ol className="space-y-2" aria-label="Versions, newest first">
           {versions.map((v) => (
-            <li key={v.id} className="card flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="font-semibold">{v.reason}</p>
-                <p className="text-sm text-muted">
-                  <time dateTime={v.at}>{format(new Date(v.at), 'd MMM yyyy, HH:mm')}</time>
-                </p>
-              </div>
-              {confirming === v.id ? (
-                <div
-                  className="flex flex-wrap items-center gap-2"
-                  role="group"
-                  aria-label={`Confirm restoring ${v.reason}`}
-                >
-                  <span>Replace your current plan with this version?</span>
-                  <Button
-                    ref={confirmRef}
-                    variant="primary"
-                    onClick={() => restore(v.id, v.reason)}
-                  >
-                    Yes, restore
-                  </Button>
-                  <Button onClick={() => setConfirming(undefined)}>Cancel</Button>
-                </div>
-              ) : (
-                <Button onClick={() => setConfirming(v.id)}>
-                  Restore<span className="sr-only"> “{v.reason}”</span>
-                </Button>
-              )}
-            </li>
+            <VersionItem
+              key={v.id}
+              version={v}
+              confirming={confirming === v.id}
+              onAsk={() => setConfirming(v.id)}
+              onCancel={() => setConfirming(undefined)}
+              onRestore={() => restore(v.id, v.reason)}
+            />
           ))}
         </ol>
       )}
