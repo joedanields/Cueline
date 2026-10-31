@@ -180,6 +180,14 @@
 - Test timeouts raised (15 s per test, 10 s async waits) so screen tests stay stable under
   coverage instrumentation.
 
+### Post-build polish (2026-10-31)
+- Whole codebase formatted with Prettier (printWidth 100); `npm run format:check` added.
+- Removed two `eslint-disable` comments: the intake start effect now runs once via a ref guard with
+  full deps, and the Dialog focus trap attaches its keydown listener in an effect.
+- Live-key run: every AI task timed out at 15 s on a busy flash model. Gemini thinking is now off
+  (`thinkingBudget: 0`), proxy timeout 25 s, client timeouts sized for one retry. Verified
+  `intakeNext`, `vendorQuestions` and `helperBrief` return valid JSON through the local proxy.
+
 ## Decisions
 | Phase | Decision | Reason |
 |---|---|---|

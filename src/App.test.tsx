@@ -7,7 +7,9 @@ import { renderApp } from '../tests/renderApp';
 describe('App shell', () => {
   it('renders landmarks and the home heading', async () => {
     renderApp('/');
-    expect(await screen.findByRole('heading', { level: 1, name: /plan around your guests/i })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /plan around your guests/i }),
+    ).toBeVisible();
     expect(screen.getByRole('banner')).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument();
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main');

@@ -6,7 +6,8 @@ import { pseudonymize, splitGuestLine } from '../lib/pseudonymize';
 import { buildDemoGuests } from '../data/demoGuests';
 import { AI_INPUTS, AI_OUTPUTS } from '../../tests/fixtures/ai';
 
-const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
+const jsonResponse = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status });
 const mockFetch = (impl: (url: string, init: RequestInit) => Promise<Response>) => {
   const fn = vi.fn(impl);
   vi.stubGlobal('fetch', fn);
@@ -27,15 +28,30 @@ describe('callAi', () => {
 
   it('maps invalid JSON and schema failures to invalid_response', async () => {
     mockFetch(async () => new Response('<html>oops', { status: 200 }));
-    expect(await callAi('checklist', AI_INPUTS.checklist, { cache: false })).toMatchObject({ ok: false, error: { kind: 'invalid_response' } });
+    expect(await callAi('checklist', AI_INPUTS.checklist, { cache: false })).toMatchObject({
+      ok: false,
+      error: { kind: 'invalid_response' },
+    });
     mockFetch(async () => jsonResponse({ data: { items: 'nope' } }));
-    expect(await callAi('checklist', AI_INPUTS.checklist, { cache: false })).toMatchObject({ ok: false, error: { kind: 'invalid_response' } });
+    expect(await callAi('checklist', AI_INPUTS.checklist, { cache: false })).toMatchObject({
+      ok: false,
+      error: { kind: 'invalid_response' },
+    });
     mockFetch(async () => jsonResponse({ error: 'invalid_response' }, 502));
-    expect(await callAi('checklist', AI_INPUTS.checklist, { cache: false })).toMatchObject({ ok: false, error: { kind: 'invalid_response' } });
+    expect(await callAi('checklist', AI_INPUTS.checklist, { cache: false })).toMatchObject({
+      ok: false,
+      error: { kind: 'invalid_response' },
+    });
   });
 
   it('maps 429, 504, 400 and other failures', async () => {
-    const cases: [number, string][] = [[429, 'rate_limited'], [504, 'timeout'], [400, 'bad_request'], [502, 'upstream'], [500, 'upstream']];
+    const cases: [number, string][] = [
+      [429, 'rate_limited'],
+      [504, 'timeout'],
+      [400, 'bad_request'],
+      [502, 'upstream'],
+      [500, 'upstream'],
+    ];
     for (const [status, kind] of cases) {
       mockFetch(async () => jsonResponse({ error: 'x' }, status));
       const r = await callAi('checklist', AI_INPUTS.checklist, { cache: false });
@@ -49,19 +65,31 @@ describe('callAi', () => {
   });
 
   it('times out with a timeout error', async () => {
-    mockFetch((_u, init) => new Promise((_r, reject) => init.signal?.addEventListener('abort', () => reject(new DOMException('a', 'AbortError')))));
+    mockFetch(
+      (_u, init) =>
+        new Promise((_r, reject) =>
+          init.signal?.addEventListener('abort', () => reject(new DOMException('a', 'AbortError'))),
+        ),
+    );
     const r = await callAi('checklist', AI_INPUTS.checklist, { cache: false, timeoutMs: 10 });
     expect(r.ok ? 'ok' : r.error.kind).toBe('timeout');
   });
 
   it('reports aborted when the caller aborts (before or during the request)', async () => {
-    mockFetch((_u, init) => new Promise((_r, reject) => init.signal?.addEventListener('abort', () => reject(new DOMException('a', 'AbortError')))));
+    mockFetch(
+      (_u, init) =>
+        new Promise((_r, reject) =>
+          init.signal?.addEventListener('abort', () => reject(new DOMException('a', 'AbortError'))),
+        ),
+    );
     const ctrl = new AbortController();
     const pending = callAi('checklist', AI_INPUTS.checklist, { cache: false, signal: ctrl.signal });
     await Promise.resolve();
     ctrl.abort();
     expect(await pending).toMatchObject({ ok: false, error: { kind: 'aborted' } });
-    expect(await callAi('checklist', AI_INPUTS.checklist, { cache: false, signal: AbortSignal.abort() })).toMatchObject({ ok: false, error: { kind: 'aborted' } });
+    expect(
+      await callAi('checklist', AI_INPUTS.checklist, { cache: false, signal: AbortSignal.abort() }),
+    ).toMatchObject({ ok: false, error: { kind: 'aborted' } });
   });
 
   it('serves a cache hit without a network call, and re-validates cached values', async () => {
@@ -87,7 +115,10 @@ describe('callAi', () => {
 
   it('INTEGRATION: the outgoing /api/ai body never contains any guest name', async () => {
     const guests = buildDemoGuests();
-    const raw = guests.map((g, i) => `${g.name} — ${i % 2 ? 'veg, phone 98765 43210' : `cousin of ${guests[(i + 1) % guests.length]?.name ?? ''}`}`);
+    const raw = guests.map(
+      (g, i) =>
+        `${g.name} — ${i % 2 ? 'veg, phone 98765 43210' : `cousin of ${guests[(i + 1) % guests.length]?.name ?? ''}`}`,
+    );
     const { lines } = pseudonymize(raw.map(splitGuestLine));
     const fetchMock = mockFetch(async () => jsonResponse({ data: AI_OUTPUTS.guestLens }));
     await callAi('guestLens', { lines, occasion: 'Birthday' });
@@ -112,9 +143,24 @@ describe('fallbacks', () => {
   it('walks the static intake list and only asks about weather for outdoor venues', () => {
     expect(nextFallbackQuestion([], {})).toMatchObject({ field: 'occasion' });
     const askedToVenue = ['occasion', 'startsAt', 'endsAt', 'venueType'] as const;
-    expect(nextFallbackQuestion([...askedToVenue], { venueType: 'Hall' })).toMatchObject({ field: 'guestCountRough' });
-    expect(nextFallbackQuestion([...askedToVenue], { venueType: 'Outdoor' })).toMatchObject({ field: 'weatherBackup' });
-    const all = ['occasion', 'startsAt', 'endsAt', 'venueType', 'weatherBackup', 'guestCountRough', 'budget', 'mealTypes', 'culturalContext', 'weights'] as const;
+    expect(nextFallbackQuestion([...askedToVenue], { venueType: 'Hall' })).toMatchObject({
+      field: 'guestCountRough',
+    });
+    expect(nextFallbackQuestion([...askedToVenue], { venueType: 'Outdoor' })).toMatchObject({
+      field: 'weatherBackup',
+    });
+    const all = [
+      'occasion',
+      'startsAt',
+      'endsAt',
+      'venueType',
+      'weatherBackup',
+      'guestCountRough',
+      'budget',
+      'mealTypes',
+      'culturalContext',
+      'weights',
+    ] as const;
     expect(nextFallbackQuestion([...all], {})).toEqual({ done: true });
   });
 

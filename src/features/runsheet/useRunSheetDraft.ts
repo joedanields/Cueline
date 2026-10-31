@@ -21,15 +21,23 @@ export function useRunSheetDraft() {
     if (!event) return;
     const needs = needSummary(groups);
     const out = await ai.run({
-      occasion: event.occasion, durationMin: Math.max(MIN_DURATION, Math.min(1440, duration)), mealTypes: event.mealTypes,
-      needSummary: needs, helpers: helpers.slice(0, 20).map((_, i) => ({ label: helperLabel(i) })),
-      culturalContext: event.culturalContext, weights: event.weights,
+      occasion: event.occasion,
+      durationMin: Math.max(MIN_DURATION, Math.min(1440, duration)),
+      mealTypes: event.mealTypes,
+      needSummary: needs,
+      helpers: helpers.slice(0, 20).map((_, i) => ({ label: helperLabel(i) })),
+      culturalContext: event.culturalContext,
+      weights: event.weights,
     });
-    const sheet = out ? runSheetFromDraft(out, helpers) : fallbackRunSheet(duration, event.mealTypes, needs);
+    const sheet = out
+      ? runSheetFromDraft(out, helpers)
+      : fallbackRunSheet(duration, event.mealTypes, needs);
     const state = useStore.getState();
     state.snapshot('Before drafting the run sheet');
     state.setRunSheet(sheet);
-    announce(`Run sheet drafted: ${sheet.segments.length} segments, ${sheet.constraints.length} guest constraints.`);
+    announce(
+      `Run sheet drafted: ${sheet.segments.length} segments, ${sheet.constraints.length} guest constraints.`,
+    );
   };
 
   return { draft, status: ai.status, failed: ai.status === 'error' };

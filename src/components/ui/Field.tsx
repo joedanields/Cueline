@@ -1,9 +1,21 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import {
+  forwardRef,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react';
 
 export const inputClass =
   'mt-1 block w-full min-h-[44px] rounded border-2 border-line bg-bg px-3 py-2 text-fg aria-[invalid=true]:border-danger';
 
-type FieldShellProps = { id: string; label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode };
+type FieldShellProps = {
+  id: string;
+  label: ReactNode;
+  hint?: ReactNode;
+  error?: string;
+  children: ReactNode;
+};
 
 /** Label + hint + error, linked to the control via `aria-describedby`. */
 export function FieldShell({ id, label, hint, error, children }: FieldShellProps) {
@@ -34,32 +46,75 @@ export function describedBy(id: string, hint?: ReactNode, error?: string) {
   return { 'aria-describedby': ids || undefined, 'aria-invalid': error ? true : undefined };
 }
 
-type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & { id: string; label: ReactNode; hint?: ReactNode; error?: string };
+type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
+  id: string;
+  label: ReactNode;
+  hint?: ReactNode;
+  error?: string;
+};
 
-export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField({ id, label, hint, error, className = '', ...rest }, ref) {
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
+  { id, label, hint, error, className = '', ...rest },
+  ref,
+) {
   return (
     <FieldShell id={id} label={label} hint={hint} error={error}>
-      <input ref={ref} id={id} className={`${inputClass} ${className}`} {...describedBy(id, hint, error)} {...rest} />
+      <input
+        ref={ref}
+        id={id}
+        className={`${inputClass} ${className}`}
+        {...describedBy(id, hint, error)}
+        {...rest}
+      />
     </FieldShell>
   );
 });
 
-type TextAreaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & { id: string; label: ReactNode; hint?: ReactNode; error?: string };
+type TextAreaProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  id: string;
+  label: ReactNode;
+  hint?: ReactNode;
+  error?: string;
+};
 
 export function TextAreaField({ id, label, hint, error, className = '', ...rest }: TextAreaProps) {
   return (
     <FieldShell id={id} label={label} hint={hint} error={error}>
-      <textarea id={id} className={`${inputClass} ${className}`} {...describedBy(id, hint, error)} {...rest} />
+      <textarea
+        id={id}
+        className={`${inputClass} ${className}`}
+        {...describedBy(id, hint, error)}
+        {...rest}
+      />
     </FieldShell>
   );
 }
 
-type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & { id: string; label: ReactNode; hint?: ReactNode; error?: string; children: ReactNode };
+type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & {
+  id: string;
+  label: ReactNode;
+  hint?: ReactNode;
+  error?: string;
+  children: ReactNode;
+};
 
-export function SelectField({ id, label, hint, error, children, className = '', ...rest }: SelectFieldProps) {
+export function SelectField({
+  id,
+  label,
+  hint,
+  error,
+  children,
+  className = '',
+  ...rest
+}: SelectFieldProps) {
   return (
     <FieldShell id={id} label={label} hint={hint} error={error}>
-      <select id={id} className={`${inputClass} ${className}`} {...describedBy(id, hint, error)} {...rest}>
+      <select
+        id={id}
+        className={`${inputClass} ${className}`}
+        {...describedBy(id, hint, error)}
+        {...rest}
+      >
         {children}
       </select>
     </FieldShell>
@@ -77,7 +132,15 @@ type ChoiceGroupProps = {
 };
 
 /** Native radio/checkbox group in a fieldset — arrow keys work for radios out of the box. */
-export function ChoiceGroup({ name, legend, options, multiple = false, value, onChange, error }: ChoiceGroupProps) {
+export function ChoiceGroup({
+  name,
+  legend,
+  options,
+  multiple = false,
+  value,
+  onChange,
+  error,
+}: ChoiceGroupProps) {
   const errorId = `${name}-error`;
   return (
     <fieldset className="space-y-2" aria-describedby={error ? errorId : undefined}>
@@ -86,7 +149,10 @@ export function ChoiceGroup({ name, legend, options, multiple = false, value, on
         {options.map((o) => {
           const checked = value.includes(o.value);
           return (
-            <label key={o.value} className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded border-2 px-3 py-2 ${checked ? 'border-accent' : 'border-line'}`}>
+            <label
+              key={o.value}
+              className={`inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded border-2 px-3 py-2 ${checked ? 'border-accent' : 'border-line'}`}
+            >
               <input
                 type={multiple ? 'checkbox' : 'radio'}
                 name={name}
@@ -94,7 +160,10 @@ export function ChoiceGroup({ name, legend, options, multiple = false, value, on
                 checked={checked}
                 onChange={(e) => {
                   if (!multiple) onChange([o.value]);
-                  else onChange(e.target.checked ? [...value, o.value] : value.filter((v) => v !== o.value));
+                  else
+                    onChange(
+                      e.target.checked ? [...value, o.value] : value.filter((v) => v !== o.value),
+                    );
                 }}
               />
               {o.label}

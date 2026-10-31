@@ -38,7 +38,9 @@ guestCountRough, mealTypes, kidsAgeRange, weatherBackup, weights.
 Never ask about a field already asked. Ask about weather backup only for outdoor venues and about
 kids' ages only if children are mentioned.`,
 
-  guestLens: (i) => `Event: ${fence(i.occasion)}. Cultural context: ${fence(i.culturalContext ?? 'not specified')}.
+  guestLens: (
+    i,
+  ) => `Event: ${fence(i.occasion)}. Cultural context: ${fence(i.culturalContext ?? 'not specified')}.
 Each line describes one guest or a household. Lines:
 ${fence(i.lines.map((l) => `${l.id}: ${l.text}`).join('\n'))}
 For each line return tags. If a line is a household, return one entry per person instead, using the
@@ -51,7 +53,9 @@ Triggers: ${fence(i.triggers)}
 For each trigger write 1–3 concrete checklist items an organizer can verify or arrange before the
 day. Tie each item to its trigger (copy the trigger string exactly). Each item ≤ 100 characters.`,
 
-  prepTasks: (i) => `Event: ${fence(i.occasion)}. Venue: ${i.venueType}. Days until event: ${i.daysUntilEvent}.
+  prepTasks: (
+    i,
+  ) => `Event: ${fence(i.occasion)}. Venue: ${i.venueType}. Days until event: ${i.daysUntilEvent}.
 Meals: ${i.mealTypes.join(', ') || 'not specified'}. Helpers available: ${i.helpersCount}.
 Vendors already involved: ${i.hasVendors.join(', ') || 'none'}.
 Guest need summary (counts): ${fence(i.needSummary)}
@@ -67,12 +71,16 @@ Helper: ${i.helperLabel}. Assignments: ${fence(i.assignments)}
 Write a friendly 3–5 line brief for this helper: what they own, when to arrive, the single most
 important thing to get right. Plain text, no markdown. Refer to the helper as "you".`,
 
-  vendorQuestions: (i) => `Vendor type: ${i.vendorType}. Venue: ${i.venueType}. Event: ${fence(i.occasion)}.
+  vendorQuestions: (
+    i,
+  ) => `Vendor type: ${i.vendorType}. Venue: ${i.venueType}. Event: ${fence(i.occasion)}.
 Guest need summary (counts): ${fence(i.needSummary)}
 List 6–10 questions the organizer should ask this vendor, prioritising those driven by guest
 needs. Questions only — never assume answers, availability or prices. Give a short "why" for each.`,
 
-  runSheet: (i) => `Event: ${fence(i.occasion)}. Duration: ${i.durationMin} minutes. Meals: ${i.mealTypes.join(', ') || 'not specified'}.
+  runSheet: (
+    i,
+  ) => `Event: ${fence(i.occasion)}. Duration: ${i.durationMin} minutes. Meals: ${i.mealTypes.join(', ') || 'not specified'}.
 Cultural context: ${fence(i.culturalContext ?? 'not specified')}
 Helpers: ${fence(i.helpers.map((h) => h.label))}. Priority weights (0–5): ${JSON.stringify(i.weights)}
 Guest need summary (counts): ${fence(i.needSummary)}
@@ -85,7 +93,9 @@ children's activity before late afternoon, medication/meal timing for diabetic g
 Constraint: kind, segmentKey, minutesFromStart?, otherSegmentKey?, reason (≤ 15 words), needGroup,
 severity (hard|soft).`,
 
-  recovery: (i) => `Now: ${i.nowOffsetMin} minutes after the event started. Priority weights (0–5): ${JSON.stringify(i.weights)}
+  recovery: (
+    i,
+  ) => `Now: ${i.nowOffsetMin} minutes after the event started. Priority weights (0–5): ${JSON.stringify(i.weights)}
 Segments: ${fence(i.segments)}
 The event is running late and these guest constraints are now broken:
 ${fence(i.breaks)}

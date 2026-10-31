@@ -3,7 +3,13 @@ import { useStore } from './index';
 import { useToastStore } from './toastStore';
 import { CORRUPT_MESSAGE, STORAGE_KEY } from './persistence';
 import { PersistedStateSchema, emptyPersistedState } from '../shared/schemas';
-import { makeGuest, makeSegment, makeTask, validEvent, validHelper } from '../../tests/fixtures/state';
+import {
+  makeGuest,
+  makeSegment,
+  makeTask,
+  validEvent,
+  validHelper,
+} from '../../tests/fixtures/state';
 
 const reset = () => {
   useStore.getState().deleteAllData();
@@ -21,7 +27,12 @@ describe('store persistence', () => {
   });
 
   it('rehydrates a valid stored plan', async () => {
-    const state = { ...emptyPersistedState(), event: validEvent, guests: [makeGuest()], versions: [] };
+    const state = {
+      ...emptyPersistedState(),
+      event: validEvent,
+      guests: [makeGuest()],
+      versions: [],
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ state, version: 1 }));
     await useStore.persist.rehydrate();
     expect(useStore.getState().guests).toHaveLength(1);
@@ -38,7 +49,11 @@ describe('store persistence', () => {
   });
 
   it('resets safely when stored state fails the schema (tampering)', async () => {
-    const tampered = { ...emptyPersistedState(), guests: [{ id: 'x', name: '<script>' }], versions: [] };
+    const tampered = {
+      ...emptyPersistedState(),
+      guests: [{ id: 'x', name: '<script>' }],
+      versions: [],
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: tampered, version: 1 }));
     await useStore.persist.rehydrate();
     expect(useStore.getState().guests).toEqual([]);
@@ -60,7 +75,9 @@ describe('store actions', () => {
     s.updateGuest('g_a', { ageBand: 'senior' });
     s.setRsvp(['g_b'], 'maybe');
     s.removeGuest('g_a');
-    expect(useStore.getState().guests).toEqual([expect.objectContaining({ id: 'g_b', rsvp: 'maybe' })]);
+    expect(useStore.getState().guests).toEqual([
+      expect.objectContaining({ id: 'g_b', rsvp: 'maybe' }),
+    ]);
   });
 
   it('unassigns a removed helper from tasks and segments', () => {
@@ -107,7 +124,11 @@ describe('versions', () => {
   });
 
   it('refuses to restore an invalid snapshot', () => {
-    useStore.setState({ versions: [{ id: 'ver_bad', at: new Date().toISOString(), reason: 'x', snapshot: { nope: 1 } }] });
+    useStore.setState({
+      versions: [
+        { id: 'ver_bad', at: new Date().toISOString(), reason: 'x', snapshot: { nope: 1 } },
+      ],
+    });
     expect(useStore.getState().restoreVersion('ver_bad')).toBe(false);
     expect(useStore.getState().restoreVersion('missing')).toBe(false);
   });

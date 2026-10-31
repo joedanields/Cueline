@@ -27,7 +27,12 @@ export function LiveRegionProvider({ children }: { children: ReactNode }) {
       <div className="sr-only" aria-live="polite" aria-atomic="true" data-testid="live-polite">
         {polite}
       </div>
-      <div className="sr-only" aria-live="assertive" aria-atomic="true" data-testid="live-assertive">
+      <div
+        className="sr-only"
+        aria-live="assertive"
+        aria-atomic="true"
+        data-testid="live-assertive"
+      >
         {assertive}
       </div>
     </LiveRegionContext.Provider>

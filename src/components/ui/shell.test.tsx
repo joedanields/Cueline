@@ -16,7 +16,9 @@ function Harness() {
   const [explode, setExplode] = useState(true);
   return (
     <>
-      <button type="button" onClick={() => setExplode(false)}>Fix it</button>
+      <button type="button" onClick={() => setExplode(false)}>
+        Fix it
+      </button>
       <ErrorBoundary resetKey="/a">
         <Boom explode={explode} />
       </ErrorBoundary>
@@ -36,9 +38,17 @@ describe('ErrorBoundary', () => {
 
   it('resets when the route changes', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    const { rerender } = render(<ErrorBoundary resetKey="/a"><Boom explode /></ErrorBoundary>);
+    const { rerender } = render(
+      <ErrorBoundary resetKey="/a">
+        <Boom explode />
+      </ErrorBoundary>,
+    );
     expect(screen.getByRole('alert')).toBeVisible();
-    rerender(<ErrorBoundary resetKey="/b"><Boom explode={false} /></ErrorBoundary>);
+    rerender(
+      <ErrorBoundary resetKey="/b">
+        <Boom explode={false} />
+      </ErrorBoundary>,
+    );
     expect(screen.getByText('Fine now')).toBeVisible();
   });
 });

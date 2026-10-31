@@ -34,11 +34,17 @@ export default tseslint.config(
       'no-restricted-syntax': [
         'error',
         { selector: "MemberExpression[property.name='innerHTML']", message: 'Use text rendering.' },
-        { selector: 'ExportDefaultDeclaration', message: 'Use named exports (except lazy routes).' },
+        {
+          selector: 'ExportDefaultDeclaration',
+          message: 'Use named exports (except lazy routes).',
+        },
       ],
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/consistent-type-imports': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
+      ],
     },
   },
   {

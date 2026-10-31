@@ -1,4 +1,11 @@
-import type { BudgetCategory, BudgetLine, MoneySource, Quote, Vendor, VendorType } from '../../shared/schemas';
+import type {
+  BudgetCategory,
+  BudgetLine,
+  MoneySource,
+  Quote,
+  Vendor,
+  VendorType,
+} from '../../shared/schemas';
 
 export const VENDOR_CATEGORY: Record<VendorType, BudgetCategory> = {
   caterer: 'food',
@@ -27,7 +34,10 @@ export function sourceForQuote(q: Pick<Quote, 'status'>): MoneySource | undefine
  * @example activeQuote(vendor)?.status
  */
 export function activeQuote(v: Vendor): Quote | undefined {
-  return v.quotes.find((q) => q.status === 'accepted') ?? [...v.quotes].reverse().find((q) => q.status !== 'rejected');
+  return (
+    v.quotes.find((q) => q.status === 'accepted') ??
+    [...v.quotes].reverse().find((q) => q.status !== 'rejected')
+  );
 }
 
 /**
@@ -55,8 +65,13 @@ export function lineForVendor(v: Vendor, lines: BudgetLine[]): BudgetLine | unde
  * Add AI question suggestions without duplicates (case-insensitive), keeping existing answers.
  * @example mergeQuestions([{ text: 'A?' }], ['a?', 'B?']).length // 2
  */
-export function mergeQuestions(existing: Vendor['questions'], suggestions: string[]): Vendor['questions'] {
+export function mergeQuestions(
+  existing: Vendor['questions'],
+  suggestions: string[],
+): Vendor['questions'] {
   const seen = new Set(existing.map((q) => q.text.trim().toLowerCase()));
-  const added = suggestions.filter((t) => !seen.has(t.trim().toLowerCase()) && seen.add(t.trim().toLowerCase())).map((text) => ({ text: text.slice(0, 300) }));
+  const added = suggestions
+    .filter((t) => !seen.has(t.trim().toLowerCase()) && seen.add(t.trim().toLowerCase()))
+    .map((text) => ({ text: text.slice(0, 300) }));
   return [...existing, ...added].slice(0, 30);
 }

@@ -9,20 +9,85 @@ export type AppRoute = {
 };
 
 export const ROUTES: AppRoute[] = [
-  { path: '/', label: 'Home', inNav: true, Component: lazy(() => import('./features/home/HomeScreen')) },
-  { path: '/intake', label: 'Event', inNav: true, Component: lazy(() => import('./features/intake/IntakeScreen')) },
-  { path: '/guests', label: 'Guests', inNav: true, Component: lazy(() => import('./features/guests/GuestsScreen')) },
-  { path: '/plan', label: 'Plan', inNav: true, Component: lazy(() => import('./features/plan/PlanScreen')) },
-  { path: '/timeline', label: 'Timeline', inNav: true, Component: lazy(() => import('./features/timeline/TimelineScreen')) },
-  { path: '/vendors', label: 'Vendors', inNav: true, Component: lazy(() => import('./features/vendors/VendorsScreen')) },
-  { path: '/helpers', label: 'Helpers', inNav: true, Component: lazy(() => import('./features/helpers/HelpersScreen')) },
-  { path: '/runsheet', label: 'Run sheet', inNav: true, Component: lazy(() => import('./features/runsheet/RunSheetScreen')) },
+  {
+    path: '/',
+    label: 'Home',
+    inNav: true,
+    Component: lazy(() => import('./features/home/HomeScreen')),
+  },
+  {
+    path: '/intake',
+    label: 'Event',
+    inNav: true,
+    Component: lazy(() => import('./features/intake/IntakeScreen')),
+  },
+  {
+    path: '/guests',
+    label: 'Guests',
+    inNav: true,
+    Component: lazy(() => import('./features/guests/GuestsScreen')),
+  },
+  {
+    path: '/plan',
+    label: 'Plan',
+    inNav: true,
+    Component: lazy(() => import('./features/plan/PlanScreen')),
+  },
+  {
+    path: '/timeline',
+    label: 'Timeline',
+    inNav: true,
+    Component: lazy(() => import('./features/timeline/TimelineScreen')),
+  },
+  {
+    path: '/vendors',
+    label: 'Vendors',
+    inNav: true,
+    Component: lazy(() => import('./features/vendors/VendorsScreen')),
+  },
+  {
+    path: '/helpers',
+    label: 'Helpers',
+    inNav: true,
+    Component: lazy(() => import('./features/helpers/HelpersScreen')),
+  },
+  {
+    path: '/runsheet',
+    label: 'Run sheet',
+    inNav: true,
+    Component: lazy(() => import('./features/runsheet/RunSheetScreen')),
+  },
   // Live mode is its own chunk so the planning screens never load it.
-  { path: '/live', label: 'Live', inNav: true, Component: lazy(() => import('./features/live/LiveScreen')) },
-  { path: '/versions', label: 'Versions', inNav: true, Component: lazy(() => import('./features/versions/VersionsScreen')) },
-  { path: '/export', label: 'Export', inNav: true, Component: lazy(() => import('./features/export/ExportScreen')) },
-  { path: '/print/:kind', label: 'Print', inNav: false, Component: lazy(() => import('./features/export/PrintScreen')) },
-  { path: '/card', label: 'Cue card', inNav: false, Component: lazy(() => import('./features/helpers/HelperCardScreen')) },
+  {
+    path: '/live',
+    label: 'Live',
+    inNav: true,
+    Component: lazy(() => import('./features/live/LiveScreen')),
+  },
+  {
+    path: '/versions',
+    label: 'Versions',
+    inNav: true,
+    Component: lazy(() => import('./features/versions/VersionsScreen')),
+  },
+  {
+    path: '/export',
+    label: 'Export',
+    inNav: true,
+    Component: lazy(() => import('./features/export/ExportScreen')),
+  },
+  {
+    path: '/print/:kind',
+    label: 'Print',
+    inNav: false,
+    Component: lazy(() => import('./features/export/PrintScreen')),
+  },
+  {
+    path: '/card',
+    label: 'Cue card',
+    inNav: false,
+    Component: lazy(() => import('./features/helpers/HelperCardScreen')),
+  },
 ];
 
 export const NotFoundScreen = lazy(() => import('./features/home/NotFoundScreen'));

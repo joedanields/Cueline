@@ -26,7 +26,10 @@ describe('PlanScreen', () => {
     first.focus();
     await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('tab', { name: 'Menu coverage' })).toHaveFocus();
-    expect(screen.getByRole('tab', { name: 'Menu coverage' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: 'Menu coverage' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     await user.keyboard('{End}');
     expect(screen.getByRole('tab', { name: 'Budget' })).toHaveFocus();
     await user.keyboard('{ArrowRight}');
@@ -41,8 +44,16 @@ describe('PlanScreen', () => {
     const mainsRow = within(panel).getByRole('row', { name: /mains/i });
     const before = mainsRow.textContent;
     expect(mainsRow).toHaveTextContent(/adult-equivalents × 350 g/);
-    useStore.getState().setRsvp(useStore.getState().guests.slice(0, 10).map((g) => g.id), 'no');
-    expect(await within(panel).findByRole('row', { name: /mains/i })).not.toHaveTextContent(before ?? '');
+    useStore.getState().setRsvp(
+      useStore
+        .getState()
+        .guests.slice(0, 10)
+        .map((g) => g.id),
+      'no',
+    );
+    expect(await within(panel).findByRole('row', { name: /mains/i })).not.toHaveTextContent(
+      before ?? '',
+    );
   });
 
   it('lets the user override a quantity and return to the calculated value', async () => {
@@ -52,7 +63,9 @@ describe('PlanScreen', () => {
     await user.type(within(panel).getByLabelText(/your amount for dessert/i), '99');
     expect(within(panel).getByText('Manual')).toBeVisible();
     expect(useStore.getState().quantityOverrides.Dessert).toBe(99);
-    await user.click(within(panel).getByRole('button', { name: /use calculated amount for dessert/i }));
+    await user.click(
+      within(panel).getByRole('button', { name: /use calculated amount for dessert/i }),
+    );
     expect(useStore.getState().quantityOverrides.Dessert).toBeUndefined();
   });
 
@@ -60,11 +73,15 @@ describe('PlanScreen', () => {
     renderApp('/plan');
     const user = userEvent.setup();
     const panel = await openTab(/menu coverage/i);
-    expect(within(panel).getByRole('row', { name: /diabetic-friendly/i })).toHaveTextContent(/gap: add 1 more/i);
+    expect(within(panel).getByRole('row', { name: /diabetic-friendly/i })).toHaveTextContent(
+      /gap: add 1 more/i,
+    );
     await user.type(within(panel).getByLabelText('Dish name'), 'Grilled vegetables');
     await user.click(within(panel).getByRole('checkbox', { name: 'Diabetic-friendly' }));
     await user.click(within(panel).getByRole('button', { name: 'Add dish' }));
-    expect(within(panel).getByRole('row', { name: /diabetic-friendly/i })).toHaveTextContent(/covered/i);
+    expect(within(panel).getByRole('row', { name: /diabetic-friendly/i })).toHaveTextContent(
+      /covered/i,
+    );
   });
 
   it('seats wheelchair users in the step-free zone', async () => {
@@ -76,9 +93,22 @@ describe('PlanScreen', () => {
   });
 
   it('writes the checklist via AI only for engine triggers, and falls back to static wording', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ data: { items: [
-      { trigger: 'mobility:wheelchair', text: 'Ramp at side gate' }, { trigger: 'made:up', text: 'Invented trigger' },
-    ] } }))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              data: {
+                items: [
+                  { trigger: 'mobility:wheelchair', text: 'Ramp at side gate' },
+                  { trigger: 'made:up', text: 'Invented trigger' },
+                ],
+              },
+            }),
+          ),
+      ),
+    );
     renderApp('/plan');
     const user = userEvent.setup();
     const panel = await openTab(/accessibility/i);
@@ -88,7 +118,10 @@ describe('PlanScreen', () => {
     await user.click(within(panel).getByRole('checkbox', { name: 'Ramp at side gate' }));
     expect(useStore.getState().checklist[0]?.done).toBe(true);
 
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 502 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 502 })),
+    );
     cacheClear();
     await user.click(within(panel).getByRole('button', { name: /rewrite checklist/i }));
     expect(await within(panel).findByText(/standard wording was used/i)).toBeVisible();
@@ -96,7 +129,11 @@ describe('PlanScreen', () => {
   });
 
   it('keeps done ticks for unchanged items when the checklist is rewritten', () => {
-    const merged = mergeChecklist({ items: [{ trigger: 'a', text: 'Same' }] }, ['a'], [{ id: 'x', trigger: 'a', text: 'Same', done: true }]);
+    const merged = mergeChecklist(
+      { items: [{ trigger: 'a', text: 'Same' }] },
+      ['a'],
+      [{ id: 'x', trigger: 'a', text: 'Same', done: true }],
+    );
     expect(merged[0]?.done).toBe(true);
   });
 

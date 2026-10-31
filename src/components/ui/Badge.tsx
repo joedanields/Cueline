@@ -11,9 +11,19 @@ const TONES: Record<Tone, string> = {
 };
 
 /** Status pill. Always carries a word (and optional icon) — never colour alone. */
-export function Badge({ tone = 'neutral', icon, children }: { tone?: Tone; icon?: string; children: ReactNode }) {
+export function Badge({
+  tone = 'neutral',
+  icon,
+  children,
+}: {
+  tone?: Tone;
+  icon?: string;
+  children: ReactNode;
+}) {
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-semibold ${TONES[tone]}`}>
+    <span
+      className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-semibold ${TONES[tone]}`}
+    >
       {icon ? <span aria-hidden="true">{icon}</span> : null}
       {children}
     </span>

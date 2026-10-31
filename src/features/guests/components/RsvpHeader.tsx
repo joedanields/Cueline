@@ -43,7 +43,9 @@ export function RsvpHeader() {
         />
         <output htmlFor="maybe-p">{Math.round(maybeProbability * PERCENT)}%</output>
       </div>
-      <p className="text-sm text-muted">Guests with no reply yet are planned as attending until they decline.</p>
+      <p className="text-sm text-muted">
+        Guests with no reply yet are planned as attending until they decline.
+      </p>
       {changeLog[0] ? (
         <p>
           <span className="font-semibold">Last change: </span>
@@ -54,7 +56,9 @@ export function RsvpHeader() {
         <details>
           <summary className="cursor-pointer underline">Change log ({changeLog.length})</summary>
           <ul className="mt-2 list-disc space-y-1 pl-6 text-sm">
-            {changeLog.map((c) => <li key={c.at + c.text}>{c.text}</li>)}
+            {changeLog.map((c) => (
+              <li key={c.at + c.text}>{c.text}</li>
+            ))}
           </ul>
         </details>
       ) : null}

@@ -18,11 +18,17 @@ const isRetryable = (status: number) => status === 429 || status >= 500;
 
 /** Extract `candidates[0].content.parts[0].text` without trusting the upstream shape. */
 function candidateText(body: unknown): string | undefined {
-  const text = (body as { candidates?: { content?: { parts?: { text?: unknown }[] } }[] })?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = (body as { candidates?: { content?: { parts?: { text?: unknown }[] } }[] })
+    ?.candidates?.[0]?.content?.parts?.[0]?.text;
   return typeof text === 'string' ? text : undefined;
 }
 
-async function attempt(url: string, init: RequestInit, timeoutMs: number, deps: GeminiDeps): Promise<Response | 'timeout' | 'network'> {
+async function attempt(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+  deps: GeminiDeps,
+): Promise<Response | 'timeout' | 'network'> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -38,7 +44,12 @@ async function attempt(url: string, init: RequestInit, timeoutMs: number, deps: 
  * Call Gemini with structured JSON output. One retry on 5xx/429 (with jitter); never on 4xx.
  * Upstream bodies are never returned — only generic error codes.
  */
-export async function callGemini(env: GeminiEnv, task: TaskDefinition, prompt: Prompt, deps: GeminiDeps): Promise<GeminiResult> {
+export async function callGemini(
+  env: GeminiEnv,
+  task: TaskDefinition,
+  prompt: Prompt,
+  deps: GeminiDeps,
+): Promise<GeminiResult> {
   if (!env.GEMINI_API_KEY || !env.GEMINI_MODEL) return { ok: false, code: 'misconfigured' };
   const url = `${API_BASE}/${encodeURIComponent(env.GEMINI_MODEL)}:generateContent`;
   const init: RequestInit = {
@@ -52,6 +63,9 @@ export async function callGemini(env: GeminiEnv, task: TaskDefinition, prompt: P
         responseSchema: task.responseSchema,
         temperature: task.temperature,
         maxOutputTokens: task.maxOutputTokens,
+        // Thinking adds seconds of latency and spends the output-token budget; these tasks are
+        // schema-constrained wording, and the engine re-validates everything that matters.
+        thinkingConfig: { thinkingBudget: 0 },
       },
     }),
   };
@@ -70,7 +84,9 @@ export async function callGemini(env: GeminiEnv, task: TaskDefinition, prompt: P
     const text = candidateText(await res.json());
     if (text === undefined) return { ok: false, code: 'invalid_response' };
     const parsed = task.outputSchema.safeParse(JSON.parse(text));
-    return parsed.success ? { ok: true, data: parsed.data } : { ok: false, code: 'invalid_response' };
+    return parsed.success
+      ? { ok: true, data: parsed.data }
+      : { ok: false, code: 'invalid_response' };
   } catch {
     return { ok: false, code: 'invalid_response' };
   }

@@ -11,16 +11,22 @@ const MAX_SEGMENT_MIN = 600;
  * Delay 0 is a no-op. Call `settle()` first so past segments aren't moved.
  * @example applyDelay(settle(segments, 40), constraints, 25).breaks // [{ constraintId: 'c_senior_lunch', byMin: 10 }]
  */
-export function applyDelay(segments: Segment[], constraints: GuestConstraint[], delayMin: number): ShiftResult {
+export function applyDelay(
+  segments: Segment[],
+  constraints: GuestConstraint[],
+  delayMin: number,
+): ShiftResult {
   const delay = Math.max(0, Math.round(delayMin));
-  const shifted = delay === 0
-    ? segments
-    : segments.map((s) => {
-        if (s.locked) return s;
-        if (s.status === 'upcoming') return { ...s, offsetMin: s.offsetMin + delay };
-        if (s.status === 'live') return { ...s, durationMin: Math.min(MAX_SEGMENT_MIN, s.durationMin + delay) };
-        return s;
-      });
+  const shifted =
+    delay === 0
+      ? segments
+      : segments.map((s) => {
+          if (s.locked) return s;
+          if (s.status === 'upcoming') return { ...s, offsetMin: s.offsetMin + delay };
+          if (s.status === 'live')
+            return { ...s, durationMin: Math.min(MAX_SEGMENT_MIN, s.durationMin + delay) };
+          return s;
+        });
   return { segments: shifted, breaks: findBreaks(shifted, constraints) };
 }
 
@@ -37,12 +43,20 @@ export type LiveState = {
  * @example liveState(segments, 50).current?.title // 'Cake cutting and song'
  */
 export function liveState(segments: Segment[], nowOffsetMin: number): LiveState {
-  const remaining = sortByOffset(segments.filter((s) => s.status !== 'done' && s.status !== 'skipped'));
+  const remaining = sortByOffset(
+    segments.filter((s) => s.status !== 'done' && s.status !== 'skipped'),
+  );
   const current =
     remaining.find((s) => s.status === 'live') ??
-    remaining.find((s) => s.offsetMin <= nowOffsetMin && nowOffsetMin < s.offsetMin + s.durationMin);
-  const next = remaining.find((s) => s !== current && s.offsetMin >= (current?.offsetMin ?? nowOffsetMin));
-  const target = current ? current.offsetMin + current.durationMin : next?.offsetMin ?? nowOffsetMin;
+    remaining.find(
+      (s) => s.offsetMin <= nowOffsetMin && nowOffsetMin < s.offsetMin + s.durationMin,
+    );
+  const next = remaining.find(
+    (s) => s !== current && s.offsetMin >= (current?.offsetMin ?? nowOffsetMin),
+  );
+  const target = current
+    ? current.offsetMin + current.durationMin
+    : (next?.offsetMin ?? nowOffsetMin);
   return { current, next, minutesLeft: Math.max(0, target - nowOffsetMin) };
 }
 
@@ -50,10 +64,18 @@ export function liveState(segments: Segment[], nowOffsetMin: number): LiveState 
  * Mark a segment done (or skipped) and the following upcoming segment live.
  * @example advance(segments, 's_cake', 'done')
  */
-export function advance(segments: Segment[], segmentId: string, status: 'done' | 'skipped'): Segment[] {
+export function advance(
+  segments: Segment[],
+  segmentId: string,
+  status: 'done' | 'skipped',
+): Segment[] {
   const marked = segments.map((s) => (s.id === segmentId ? { ...s, status } : s));
   const nextUp = sortByOffset(marked).find((s) => s.status === 'upcoming');
-  return marked.map((s) => (nextUp && s.id === nextUp.id && !marked.some((m) => m.status === 'live') ? { ...s, status: 'live' as const } : s));
+  return marked.map((s) =>
+    nextUp && s.id === nextUp.id && !marked.some((m) => m.status === 'live')
+      ? { ...s, status: 'live' as const }
+      : s,
+  );
 }
 
 /**

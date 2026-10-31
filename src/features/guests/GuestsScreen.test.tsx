@@ -7,7 +7,8 @@ import { useStore } from '../../store';
 import { cacheClear } from '../../ai/cache';
 import { AI_OUTPUTS } from '../../../tests/fixtures/ai';
 
-const PASTE = 'Grandpa — birthday boy, diabetic, uses walker\nRaman family (4) — 2 kids under 6, veg';
+const PASTE =
+  'Grandpa — birthday boy, diabetic, uses walker\nRaman family (4) — 2 kids under 6, veg';
 
 describe('GuestsScreen', () => {
   beforeEach(() => {
@@ -17,7 +18,12 @@ describe('GuestsScreen', () => {
 
   it('paste → loading announced → need groups render → fix a low-confidence tag', async () => {
     let resolve: (r: Response) => void = () => undefined;
-    const fetchMock = vi.fn(() => new Promise<Response>((r) => { resolve = r; }));
+    const fetchMock = vi.fn(
+      () =>
+        new Promise<Response>((r) => {
+          resolve = r;
+        }),
+    );
     vi.stubGlobal('fetch', fetchMock);
     renderApp('/guests');
     const user = userEvent.setup();
@@ -29,7 +35,9 @@ describe('GuestsScreen', () => {
     resolve(new Response(JSON.stringify({ data: AI_OUTPUTS.guestLens })));
 
     expect(await screen.findByRole('button', { name: /seniors · 1/i })).toBeVisible();
-    expect(screen.getByTestId('live-polite')).toHaveTextContent(/added 3 guests\. found \d+ need groups, \d+ tags need your review/i);
+    expect(screen.getByTestId('live-polite')).toHaveTextContent(
+      /added 3 guests\. found \d+ need groups, \d+ tags need your review/i,
+    );
     expect(useStore.getState().versions[0]?.reason).toBe('Imported 3 guests');
     const table = screen.getByRole('table');
     expect(within(table).getAllByText('Check this').length).toBeGreaterThan(0);
@@ -38,7 +46,10 @@ describe('GuestsScreen', () => {
   });
 
   it('offers Retry (focused) and Add without AI when Guest Lens fails', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":"upstream"}', { status: 502 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{"error":"upstream"}', { status: 502 })),
+    );
     renderApp('/guests');
     const user = userEvent.setup();
     await user.type(await screen.findByLabelText(/paste your guest list/i), PASTE);
@@ -54,7 +65,9 @@ describe('GuestsScreen', () => {
     const user = userEvent.setup();
     const select = await screen.findByRole('combobox', { name: 'RSVP for Kamala Sharma' });
     await user.selectOptions(select, 'no');
-    expect(screen.getByText(/last change:/i).parentElement).toHaveTextContent(/Kamala Sharma: no\. −1 expected → −0\.3 kg mains, food budget −₹900/);
+    expect(screen.getByText(/last change:/i).parentElement).toHaveTextContent(
+      /Kamala Sharma: no\. −1 expected → −0\.3 kg mains, food budget −₹900/,
+    );
     expect(useStore.getState().changeLog[0]?.text).toMatch(/−1 expected/);
   });
 
@@ -64,11 +77,18 @@ describe('GuestsScreen', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /wheelchair users · 2/i }));
     expect(screen.getByRole('heading', { name: /guest list \(2 of 62\)/i })).toBeVisible();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Mobility for Prakash Verma' }), 'limited_walking');
-    expect(useStore.getState().guests.find((g) => g.name === 'Prakash Verma')?.mobility).toBe('limited_walking');
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Mobility for Prakash Verma' }),
+      'limited_walking',
+    );
+    expect(useStore.getState().guests.find((g) => g.name === 'Prakash Verma')?.mobility).toBe(
+      'limited_walking',
+    );
     await user.click(screen.getByRole('button', { name: /edit diet for raghav iyer/i }));
     await user.click(screen.getByRole('checkbox', { name: 'Halal' }));
-    expect(useStore.getState().guests.find((g) => g.name === 'Raghav Iyer')?.dietary).toContain('halal');
+    expect(useStore.getState().guests.find((g) => g.name === 'Raghav Iyer')?.dietary).toContain(
+      'halal',
+    );
     await user.click(screen.getByRole('button', { name: /remove raghav iyer/i }));
     expect(useStore.getState().guests).toHaveLength(61);
 

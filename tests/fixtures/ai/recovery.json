@@ -1,4 +1,17 @@
-{ "options": [
-  { "label": "Serve lunch before cake", "rationale": "Seniors eat on time; cake follows lunch.", "ops": [{ "op": "moveBefore", "segmentId": "s_lunch", "beforeId": "s_cake" }] },
-  { "label": "Trim toast and cake", "rationale": "Small cuts keep everything.", "ops": [{ "op": "shorten", "segmentId": "s_toast", "byMin": 5 }, { "op": "shorten", "segmentId": "s_cake", "byMin": 5 }] }
-] }
+{
+  "options": [
+    {
+      "label": "Serve lunch before cake",
+      "rationale": "Seniors eat on time; cake follows lunch.",
+      "ops": [{ "op": "moveBefore", "segmentId": "s_lunch", "beforeId": "s_cake" }]
+    },
+    {
+      "label": "Trim toast and cake",
+      "rationale": "Small cuts keep everything.",
+      "ops": [
+        { "op": "shorten", "segmentId": "s_toast", "byMin": 5 },
+        { "op": "shorten", "segmentId": "s_cake", "byMin": 5 }
+      ]
+    }
+  ]
+}

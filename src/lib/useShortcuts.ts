@@ -13,7 +13,11 @@ export function isTypingTarget(e: KeyboardEvent): boolean {
   const t = e.target;
   if (e.ctrlKey || e.metaKey || e.altKey) return true;
   if (!(t instanceof HTMLElement)) return false;
-  return t.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || Boolean(t.closest('[role="dialog"]'));
+  return (
+    t.isContentEditable ||
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) ||
+    Boolean(t.closest('[role="dialog"]'))
+  );
 }
 
 /** Global shortcuts: `?` opens help, `g` + letter navigates. Respects the on/off setting. */
@@ -40,7 +44,10 @@ export function useGlobalShortcuts() {
         }
         return;
       }
-      if (e.key.toLowerCase() === 'g') pendingG.current = window.setTimeout(() => { pendingG.current = null; }, SEQUENCE_TIMEOUT_MS);
+      if (e.key.toLowerCase() === 'g')
+        pendingG.current = window.setTimeout(() => {
+          pendingG.current = null;
+        }, SEQUENCE_TIMEOUT_MS);
     };
     document.addEventListener('keydown', onKey);
     return () => {
@@ -56,7 +63,12 @@ export function useKeyShortcut(key: string, handler: () => void) {
   ref.current = handler;
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!useUiStore.getState().shortcutsEnabled || isTypingTarget(e) || e.key.toLowerCase() !== key) return;
+      if (
+        !useUiStore.getState().shortcutsEnabled ||
+        isTypingTarget(e) ||
+        e.key.toLowerCase() !== key
+      )
+        return;
       e.preventDefault();
       ref.current();
     };

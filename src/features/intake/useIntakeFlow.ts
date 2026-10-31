@@ -4,7 +4,13 @@ import { nextFallbackQuestion } from '../../ai/fallbacks';
 import { INTAKE_FIELDS, type InputType, type IntakeField } from '../../shared/aiTasks';
 import { MAX_QUESTIONS, missingRequired, toAiAnswers, type IntakeDraft } from './intakeLogic';
 
-export type Question = { field: IntakeField; question: string; why: string; inputType: InputType; options?: string[] };
+export type Question = {
+  field: IntakeField;
+  question: string;
+  why: string;
+  inputType: InputType;
+  options?: string[];
+};
 type Mode = 'asking' | 'summary';
 
 /** Treat every non-missing field as asked, so the static list yields only missing required ones. */
@@ -31,7 +37,15 @@ export function useIntakeFlow(initialDraft: IntakeDraft, startInSummary: boolean
 
   const fromFallback = (nextAsked: IntakeField[], d: IntakeDraft): Question | null => {
     const q = nextFallbackQuestion(nextAsked, { venueType: d.venueType });
-    return 'field' in q ? { field: q.field, question: q.question, why: q.why, inputType: q.inputType, options: q.options } : null;
+    return 'field' in q
+      ? {
+          field: q.field,
+          question: q.question,
+          why: q.why,
+          inputType: q.inputType,
+          options: q.options,
+        }
+      : null;
   };
 
   const pickNext = async (nextAsked: IntakeField[], d: IntakeDraft): Promise<Question | null> => {
@@ -39,7 +53,13 @@ export function useIntakeFlow(initialDraft: IntakeDraft, startInSummary: boolean
       const out = await ai.run({ answers: toAiAnswers(d, nextAsked), asked: nextAsked });
       if (out) {
         if (!out.done && out.field && out.question && !nextAsked.includes(out.field)) {
-          return { field: out.field, question: out.question, why: out.why ?? '', inputType: out.inputType ?? 'text', options: out.options };
+          return {
+            field: out.field,
+            question: out.question,
+            why: out.why ?? '',
+            inputType: out.inputType ?? 'text',
+            options: out.options,
+          };
         }
         // The AI thinks we're done (or repeated itself): still cover required fields.
         return fromFallback(onlyMissing(nextAsked, missingRequired(d, nextAsked)), d);
@@ -76,10 +96,17 @@ export function useIntakeFlow(initialDraft: IntakeDraft, startInSummary: boolean
   const patch = useCallback((p: Partial<IntakeDraft>) => setDraft((d) => ({ ...d, ...p })), []);
 
   return {
-    draft, patch, current, mode, asked, usingFallback, status: ai.status,
+    draft,
+    patch,
+    current,
+    mode,
+    asked,
+    usingFallback,
+    status: ai.status,
     canGoBack: history.length > 0,
     start: () => advance([], draft),
-    answer, back,
+    answer,
+    back,
     toSummary: () => setMode('summary'),
   };
 }

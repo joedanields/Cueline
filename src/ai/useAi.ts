@@ -54,7 +54,10 @@ export function useAi<T extends AiTaskName>(task: T, messages: Messages<T>) {
     [announce, task],
   );
 
-  const retry = useCallback(() => (lastInput.current ? run(lastInput.current) : Promise.resolve(undefined)), [run]);
+  const retry = useCallback(
+    () => (lastInput.current ? run(lastInput.current) : Promise.resolve(undefined)),
+    [run],
+  );
   const reset = useCallback(() => {
     controller.current?.abort();
     setStatus('idle');

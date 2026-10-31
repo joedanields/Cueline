@@ -17,7 +17,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidUpdate(prev: Props): void {
-    if (this.state.failed && prev.resetKey !== this.props.resetKey) this.setState({ failed: false });
+    if (this.state.failed && prev.resetKey !== this.props.resetKey)
+      this.setState({ failed: false });
   }
 
   override render() {

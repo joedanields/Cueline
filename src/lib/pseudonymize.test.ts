@@ -3,8 +3,14 @@ import { guestCode, maskPii, pseudonymize, restoreNames, splitGuestLine } from '
 
 describe('pseudonymize', () => {
   it('splits a guest line into name and details', () => {
-    expect(splitGuestLine('Nani — knee trouble, sugar-free')).toEqual({ name: 'Nani', details: 'knee trouble, sugar-free' });
-    expect(splitGuestLine('Raman family (4) — 2 kids under 6, veg')).toEqual({ name: 'Raman family', details: '(4) — 2 kids under 6, veg' });
+    expect(splitGuestLine('Nani — knee trouble, sugar-free')).toEqual({
+      name: 'Nani',
+      details: 'knee trouble, sugar-free',
+    });
+    expect(splitGuestLine('Raman family (4) — 2 kids under 6, veg')).toEqual({
+      name: 'Raman family',
+      details: '(4) — 2 kids under 6, veg',
+    });
     expect(splitGuestLine('  Asha  ')).toEqual({ name: 'Asha', details: '' });
     expect(splitGuestLine('Mary-Jane: vegan').name).toBe('Mary-Jane');
   });
@@ -28,12 +34,17 @@ describe('pseudonymize', () => {
   });
 
   it('prefers the longest name token so partial names cannot leak', () => {
-    const { lines } = pseudonymize([{ name: 'Ramanathan', details: '' }, { name: 'Raman', details: 'friend of Ramanathan' }]);
+    const { lines } = pseudonymize([
+      { name: 'Ramanathan', details: '' },
+      { name: 'Raman', details: 'friend of Ramanathan' },
+    ]);
     expect(lines[1]?.text).toBe('friend of g_001');
   });
 
   it('masks emails and digit runs of 7 or more', () => {
-    expect(maskPii('call +91 98765 43210 or asha@example.com, flat 12')).toBe('call [number] or [email], flat 12');
+    expect(maskPii('call +91 98765 43210 or asha@example.com, flat 12')).toBe(
+      'call [number] or [email], flat 12',
+    );
     expect(maskPii('1234567')).toBe('[number]');
     expect(maskPii('123456')).toBe('123456');
     const { lines } = pseudonymize([{ name: 'Asha', details: 'phone 9876543210' }]);
@@ -41,7 +52,9 @@ describe('pseudonymize', () => {
   });
 
   it('caps sent text at 200 characters and pads codes', () => {
-    expect(pseudonymize([{ name: 'X', details: 'a'.repeat(300) }]).lines[0]?.text).toHaveLength(200);
+    expect(pseudonymize([{ name: 'X', details: 'a'.repeat(300) }]).lines[0]?.text).toHaveLength(
+      200,
+    );
     expect(guestCode(42)).toBe('g_042');
   });
 });

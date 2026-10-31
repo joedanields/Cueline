@@ -1,7 +1,48 @@
-{ "segments": [
-  { "key": "welcome", "title": "Welcome", "offsetMin": 0, "durationMin": 30, "minDurationMin": 15, "ownerLabel": "Helper A", "cue": "Greet guests", "priority": "comfort", "optional": false },
-  { "key": "lunch", "title": "Lunch", "offsetMin": 30, "durationMin": 60, "minDurationMin": 45, "ownerLabel": "organizer", "cue": "Serve seniors first", "priority": "food", "optional": false },
-  { "key": "games", "title": "Kids games", "offsetMin": 90, "durationMin": 30, "minDurationMin": 15, "ownerLabel": "Helper B", "cue": "Run games", "priority": "entertainment", "optional": true }
-], "constraints": [
-  { "kind": "must_start_before", "segmentKey": "lunch", "minutesFromStart": 60, "reason": "Seniors eat early", "needGroup": "senior", "severity": "hard" }
-], "assumptions": [] }
+{
+  "segments": [
+    {
+      "key": "welcome",
+      "title": "Welcome",
+      "offsetMin": 0,
+      "durationMin": 30,
+      "minDurationMin": 15,
+      "ownerLabel": "Helper A",
+      "cue": "Greet guests",
+      "priority": "comfort",
+      "optional": false
+    },
+    {
+      "key": "lunch",
+      "title": "Lunch",
+      "offsetMin": 30,
+      "durationMin": 60,
+      "minDurationMin": 45,
+      "ownerLabel": "organizer",
+      "cue": "Serve seniors first",
+      "priority": "food",
+      "optional": false
+    },
+    {
+      "key": "games",
+      "title": "Kids games",
+      "offsetMin": 90,
+      "durationMin": 30,
+      "minDurationMin": 15,
+      "ownerLabel": "Helper B",
+      "cue": "Run games",
+      "priority": "entertainment",
+      "optional": true
+    }
+  ],
+  "constraints": [
+    {
+      "kind": "must_start_before",
+      "segmentKey": "lunch",
+      "minutesFromStart": 60,
+      "reason": "Seniors eat early",
+      "needGroup": "senior",
+      "severity": "hard"
+    }
+  ],
+  "assumptions": []
+}

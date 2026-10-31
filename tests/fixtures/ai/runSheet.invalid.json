@@ -1,1 +1,17 @@
-{ "segments": [{ "key": "x", "title": "X", "offsetMin": -5, "durationMin": 0, "minDurationMin": 1, "ownerLabel": "a", "cue": "c", "priority": "music", "optional": false }], "constraints": [], "assumptions": [] }
+{
+  "segments": [
+    {
+      "key": "x",
+      "title": "X",
+      "offsetMin": -5,
+      "durationMin": 0,
+      "minDurationMin": 1,
+      "ownerLabel": "a",
+      "cue": "c",
+      "priority": "music",
+      "optional": false
+    }
+  ],
+  "constraints": [],
+  "assumptions": []
+}

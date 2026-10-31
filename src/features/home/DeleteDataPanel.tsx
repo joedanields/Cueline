@@ -28,8 +28,14 @@ export function DeleteDataPanel() {
         request.
       </p>
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Confirm deletion">
-          <p className="w-full font-semibold">Delete the whole plan and its history? This cannot be undone.</p>
+        <div
+          className="flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label="Confirm deletion"
+        >
+          <p className="w-full font-semibold">
+            Delete the whole plan and its history? This cannot be undone.
+          </p>
           <Button
             ref={confirmRef}
             variant="danger"

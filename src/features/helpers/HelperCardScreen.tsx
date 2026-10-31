@@ -24,7 +24,9 @@ export default function HelperCardScreen() {
   return (
     <div className="space-y-4">
       <HelperCard card={card} headingLevel={1} />
-      <Button className="no-print" onClick={() => window.print()}>Print this card</Button>
+      <Button className="no-print" onClick={() => window.print()}>
+        Print this card
+      </Button>
     </div>
   );
 }

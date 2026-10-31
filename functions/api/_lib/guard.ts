@@ -13,10 +13,18 @@ export type GuardFailure = { code: AiErrorCode; status: number };
  * A missing Origin is rejected: browsers always send one on cross-site and same-site POSTs.
  * @example checkOrigin(req, 'https://cueline.pages.dev') // null when allowed
  */
-export function checkOrigin(request: Request, allowedOrigins: string | undefined): GuardFailure | null {
+export function checkOrigin(
+  request: Request,
+  allowedOrigins: string | undefined,
+): GuardFailure | null {
   const origin = request.headers.get('origin');
   if (!origin) return { code: 'forbidden', status: 403 };
-  const allowed = new Set((allowedOrigins ?? '').split(',').map((o) => o.trim()).filter(Boolean));
+  const allowed = new Set(
+    (allowedOrigins ?? '')
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean),
+  );
   allowed.add(new URL(request.url).origin);
   return allowed.has(origin) ? null : { code: 'forbidden', status: 403 };
 }
@@ -24,13 +32,18 @@ export function checkOrigin(request: Request, allowedOrigins: string | undefined
 /** Only `application/json` bodies (charset parameter allowed). */
 export function checkContentType(request: Request): GuardFailure | null {
   const type = request.headers.get('content-type') ?? '';
-  return type.split(';')[0]?.trim().toLowerCase() === 'application/json' ? null : { code: 'unsupported_media_type', status: 415 };
+  return type.split(';')[0]?.trim().toLowerCase() === 'application/json'
+    ? null
+    : { code: 'unsupported_media_type', status: 415 };
 }
 
 /**
  * Read the body as text, enforcing the byte cap on both the declared length and the actual stream.
  */
-export async function readBodyCapped(request: Request, maxBytes = MAX_BODY_BYTES): Promise<string | GuardFailure> {
+export async function readBodyCapped(
+  request: Request,
+  maxBytes = MAX_BODY_BYTES,
+): Promise<string | GuardFailure> {
   const tooLarge: GuardFailure = { code: 'payload_too_large', status: 413 };
   const declared = Number(request.headers.get('content-length') ?? '0');
   if (declared > maxBytes) return tooLarge;

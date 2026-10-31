@@ -62,7 +62,11 @@ export function App() {
       <footer className="border-t border-line/40 no-print">
         <div className="mx-auto max-w-6xl px-4 py-4 text-sm text-muted">
           Your plan stays in this browser. Guest names are never sent to the AI.{' '}
-          <button type="button" className="min-h-[24px] underline" onClick={() => openShortcuts(true)}>
+          <button
+            type="button"
+            className="min-h-[24px] underline"
+            onClick={() => openShortcuts(true)}
+          >
             Keyboard shortcuts (?)
           </button>
         </div>

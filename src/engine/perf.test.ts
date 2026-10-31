@@ -19,8 +19,12 @@ describe('engine performance (ARCHITECTURE §6)', () => {
     if (!event) throw new Error('demo has an event');
     const base = demo.guests[0] as Guest;
     const guests: Guest[] = Array.from({ length: 200 }, (_, i) => ({
-      ...base, id: `g_${i}`, ageBand: BANDS[i % BANDS.length] ?? 'adult', rsvp: i % 4 === 0 ? 'maybe' : 'yes',
-      dietary: i % 3 === 0 ? ['vegetarian'] : [], mobility: i % 25 === 0 ? 'wheelchair' : 'none',
+      ...base,
+      id: `g_${i}`,
+      ageBand: BANDS[i % BANDS.length] ?? 'adult',
+      rsvp: i % 4 === 0 ? 'maybe' : 'yes',
+      dietary: i % 3 === 0 ? ['vegetarian'] : [],
+      mobility: i % 25 === 0 ? 'wheelchair' : 'none',
     }));
 
     const recomputeAll = () => {

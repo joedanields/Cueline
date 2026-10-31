@@ -38,9 +38,13 @@ const defaultDeps: GeminiDeps = {
 };
 
 /** Build the POST handler; dependencies are injectable so tests never touch the network. */
-export function createHandler(deps: GeminiDeps = defaultDeps, allow: (ip: string) => boolean = createRateLimiter()) {
+export function createHandler(
+  deps: GeminiDeps = defaultDeps,
+  allow: (ip: string) => boolean = createRateLimiter(),
+) {
   return async ({ request, env }: Context): Promise<Response> => {
-    if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, { allow: 'POST' });
+    if (request.method !== 'POST')
+      return json({ error: 'method_not_allowed' }, 405, { allow: 'POST' });
     const guard = checkContentType(request) ?? checkOrigin(request, env.ALLOWED_ORIGINS);
     if (guard) return fail(guard.code);
     if (!allow(request.headers.get('cf-connecting-ip') ?? 'unknown')) return fail('rate_limited');

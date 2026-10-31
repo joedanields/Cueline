@@ -41,12 +41,23 @@ export function SummaryCard({ draft, onChange, onConfirm, onBack }: Props) {
   return (
     <section aria-labelledby="summary-heading" className="card space-y-4">
       <h2 id="summary-heading">Check your event details</h2>
-      <p className="text-muted">Change anything you like, then confirm. You can come back and edit later.</p>
+      <p className="text-muted">
+        Change anything you like, then confirm. You can come back and edit later.
+      </p>
       {errorList.length > 0 ? (
-        <div ref={errorRef} tabIndex={-1} role="alert" className="rounded border-2 border-danger p-3">
-          <p className="font-semibold">Please fix {errorList.length === 1 ? '1 field' : `${errorList.length} fields`}:</p>
+        <div
+          ref={errorRef}
+          tabIndex={-1}
+          role="alert"
+          className="rounded border-2 border-danger p-3"
+        >
+          <p className="font-semibold">
+            Please fix {errorList.length === 1 ? '1 field' : `${errorList.length} fields`}:
+          </p>
           <ul className="list-disc pl-6">
-            {errorList.map((e) => <li key={e}>{e}</li>)}
+            {errorList.map((e) => (
+              <li key={e}>{e}</li>
+            ))}
           </ul>
         </div>
       ) : null}
@@ -57,9 +68,24 @@ export function SummaryCard({ draft, onChange, onConfirm, onBack }: Props) {
           submit();
         }}
       >
-        <TextField id="sum-title" label="Event title (optional)" maxLength={80} value={draft.title} placeholder={draft.occasion} onChange={(e) => onChange({ title: e.target.value })} />
+        <TextField
+          id="sum-title"
+          label="Event title (optional)"
+          maxLength={80}
+          value={draft.title}
+          placeholder={draft.occasion}
+          onChange={(e) => onChange({ title: e.target.value })}
+        />
         {SUMMARY_FIELDS.map(({ field, label }) => (
-          <FieldInput key={field} field={field} label={label} draft={draft} onChange={onChange} errors={errors} idPrefix="sum" />
+          <FieldInput
+            key={field}
+            field={field}
+            label={label}
+            draft={draft}
+            onChange={onChange}
+            errors={errors}
+            idPrefix="sum"
+          />
         ))}
         <div className="flex flex-wrap gap-2">
           {onBack ? <Button onClick={onBack}>Back to questions</Button> : null}

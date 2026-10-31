@@ -16,12 +16,32 @@ type ZoneDef = { id: ZoneId; label: string; reasons: string[]; accepts: (g: Gues
 
 const needsStepFree = (g: Guest) => g.mobility !== 'none';
 const ZONES: ZoneDef[] = [
-  { id: 'step_free', label: 'Step-free zone', accepts: needsStepFree,
-    reasons: ['Level route from the entrance', 'Space for wheelchairs and strollers', 'Near accessible restroom'] },
-  { id: 'quiet', label: 'Quiet zone near restrooms', accepts: (g) => g.ageBand === 'senior' || g.sensory !== 'none',
-    reasons: ['Away from speakers and the play area', 'Short walk to restrooms', 'Good lighting for low vision'] },
-  { id: 'kids', label: 'Family zone by the play area', accepts: (g) => g.ageBand === 'child' || g.ageBand === 'infant',
-    reasons: ['Within sight of the kids’ corner', 'Room for high chairs'] },
+  {
+    id: 'step_free',
+    label: 'Step-free zone',
+    accepts: needsStepFree,
+    reasons: [
+      'Level route from the entrance',
+      'Space for wheelchairs and strollers',
+      'Near accessible restroom',
+    ],
+  },
+  {
+    id: 'quiet',
+    label: 'Quiet zone near restrooms',
+    accepts: (g) => g.ageBand === 'senior' || g.sensory !== 'none',
+    reasons: [
+      'Away from speakers and the play area',
+      'Short walk to restrooms',
+      'Good lighting for low vision',
+    ],
+  },
+  {
+    id: 'kids',
+    label: 'Family zone by the play area',
+    accepts: (g) => g.ageBand === 'child' || g.ageBand === 'infant',
+    reasons: ['Within sight of the kids’ corner', 'Room for high chairs'],
+  },
   { id: 'general', label: 'General seating', accepts: () => true, reasons: ['Open seating'] },
 ];
 
@@ -46,23 +66,38 @@ export function computeSeating(guests: Guest[], seatsPerTable: number): SeatingZ
   const honoreeIds = [
     ...guests.filter((g) => g.role === 'honoree'),
     ...guests.filter((g) => g.role === 'vip'),
-  ].slice(0, Math.max(1, seatsPerTable)).map((g) => g.id);
+  ]
+    .slice(0, Math.max(1, seatsPerTable))
+    .map((g) => g.id);
   const placed = new Set(honoreeIds);
   const honoreeStepFree = guests.some((g) => placed.has(g.id) && needsStepFree(g));
 
-  const zones: SeatingZone[] = [{
-    id: 'honoree', label: 'Honoree table', seats: honoreeIds.length, guestIds: honoreeIds,
-    tables: honoreeIds.length ? [honoreeIds] : [[]],
-    reasons: ['Centre of the room, clear sightline for speeches',
-      ...(honoreeStepFree ? ['Step-free access needed at this table'] : [])],
-  }];
+  const zones: SeatingZone[] = [
+    {
+      id: 'honoree',
+      label: 'Honoree table',
+      seats: honoreeIds.length,
+      guestIds: honoreeIds,
+      tables: honoreeIds.length ? [honoreeIds] : [[]],
+      reasons: [
+        'Centre of the room, clear sightline for speeches',
+        ...(honoreeStepFree ? ['Step-free access needed at this table'] : []),
+      ],
+    },
+  ];
 
   for (const def of ZONES) {
     const ids = guests.filter((g) => !placed.has(g.id) && def.accepts(g)).map((g) => g.id);
     ids.forEach((id) => placed.add(id));
     if (ids.length === 0) continue;
-    zones.push({ id: def.id, label: def.label, seats: ids.length, guestIds: ids,
-      tables: chunkTables(ids, seatsPerTable), reasons: def.reasons });
+    zones.push({
+      id: def.id,
+      label: def.label,
+      seats: ids.length,
+      guestIds: ids,
+      tables: chunkTables(ids, seatsPerTable),
+      reasons: def.reasons,
+    });
   }
   return zones;
 }

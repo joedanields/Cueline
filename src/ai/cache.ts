@@ -43,7 +43,8 @@ export function cacheSet(key: string, value: unknown): void {
 export function cacheClear(): void {
   memory.clear();
   try {
-    for (const k of Object.keys(sessionStorage)) if (k.startsWith(STORAGE_PREFIX)) sessionStorage.removeItem(k);
+    for (const k of Object.keys(sessionStorage))
+      if (k.startsWith(STORAGE_PREFIX)) sessionStorage.removeItem(k);
   } catch {
     // ignore
   }

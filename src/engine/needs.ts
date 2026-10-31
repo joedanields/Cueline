@@ -5,13 +5,28 @@ export type NeedGroup = { key: string; label: string; count: number; guestIds: s
 type Def = { key: string; label: string; match: (g: Guest) => boolean };
 
 const LABELS: Record<string, string> = {
-  'age:senior': 'Seniors', 'age:child': 'Children', 'age:infant': 'Infants', 'age:teen': 'Teens',
-  'diet:vegetarian': 'Vegetarian', 'diet:vegan': 'Vegan', 'diet:jain': 'Jain', 'diet:halal': 'Halal',
-  'diet:kosher': 'Kosher', 'diet:gluten_free': 'Gluten-free', 'diet:nut_allergy': 'Nut allergy',
-  'diet:dairy_free': 'Dairy-free', 'diet:diabetic_friendly': 'Diabetic-friendly', 'diet:soft_food': 'Soft food',
-  'diet:other': 'Other diet', 'mobility:wheelchair': 'Wheelchair users', 'mobility:limited_walking': 'Limited walking',
-  'mobility:stroller': 'Strollers', 'sensory:low_vision': 'Low vision', 'sensory:hard_of_hearing': 'Hard of hearing',
-  'sensory:noise_sensitive': 'Noise-sensitive', 'travel:out_of_town': 'Out-of-town',
+  'age:senior': 'Seniors',
+  'age:child': 'Children',
+  'age:infant': 'Infants',
+  'age:teen': 'Teens',
+  'diet:vegetarian': 'Vegetarian',
+  'diet:vegan': 'Vegan',
+  'diet:jain': 'Jain',
+  'diet:halal': 'Halal',
+  'diet:kosher': 'Kosher',
+  'diet:gluten_free': 'Gluten-free',
+  'diet:nut_allergy': 'Nut allergy',
+  'diet:dairy_free': 'Dairy-free',
+  'diet:diabetic_friendly': 'Diabetic-friendly',
+  'diet:soft_food': 'Soft food',
+  'diet:other': 'Other diet',
+  'mobility:wheelchair': 'Wheelchair users',
+  'mobility:limited_walking': 'Limited walking',
+  'mobility:stroller': 'Strollers',
+  'sensory:low_vision': 'Low vision',
+  'sensory:hard_of_hearing': 'Hard of hearing',
+  'sensory:noise_sensitive': 'Noise-sensitive',
+  'travel:out_of_town': 'Out-of-town',
 };
 
 /**
@@ -57,9 +72,18 @@ export function needSummary(groups: NeedGroup[]): Record<string, number> {
 
 /** Need keys that trigger accessibility/comfort checklist items. */
 const CHECKLIST_KEYS = new Set([
-  'mobility:wheelchair', 'mobility:limited_walking', 'mobility:stroller', 'sensory:low_vision',
-  'sensory:hard_of_hearing', 'sensory:noise_sensitive', 'age:infant', 'age:senior', 'age:child',
-  'diet:nut_allergy', 'diet:diabetic_friendly', 'travel:out_of_town',
+  'mobility:wheelchair',
+  'mobility:limited_walking',
+  'mobility:stroller',
+  'sensory:low_vision',
+  'sensory:hard_of_hearing',
+  'sensory:noise_sensitive',
+  'age:infant',
+  'age:senior',
+  'age:child',
+  'diet:nut_allergy',
+  'diet:diabetic_friendly',
+  'travel:out_of_town',
 ]);
 
 /**
@@ -68,7 +92,10 @@ const CHECKLIST_KEYS = new Set([
  * @example checklistTriggers(groups, 'outdoor') // ['mobility:wheelchair', ..., 'venue:outdoor']
  */
 export function checklistTriggers(groups: NeedGroup[], venueType: VenueType | undefined): string[] {
-  const triggers = groups.map((g) => g.key).filter((k) => CHECKLIST_KEYS.has(k)).sort();
+  const triggers = groups
+    .map((g) => g.key)
+    .filter((k) => CHECKLIST_KEYS.has(k))
+    .sort();
   if (venueType === 'outdoor') triggers.push('venue:outdoor');
   return triggers;
 }

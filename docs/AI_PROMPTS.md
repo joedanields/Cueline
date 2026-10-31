@@ -26,7 +26,7 @@ Body: {
 ```
 - `GEMINI_MODEL` is an env var (default a current fast "flash" model — check Google's model list at
   build time; do not hardcode in source).
-- Timeout 15 s (8 s for `recovery`). One retry on 5xx/429 with 800 ms jitter. Never retry 4xx.
+- Timeout 25 s (8 s for `recovery`); `thinkingConfig.thinkingBudget = 0` for low latency. One retry on 5xx/429 with 800 ms jitter. Never retry 4xx.
 - Parse `candidates[0].content.parts[0].text` → `JSON.parse` → `outputSchema.safeParse`.
   On failure return `502 { error: "invalid_response" }`. Never forward upstream error bodies.
 
@@ -181,6 +181,7 @@ groupSpecifics: string[] (e.g. ["step-free entrance at side gate", "kids' corner
 | 2026-10-30 | helperBrief, runSheet | v1: helpers sent as "Helper A/B…", names restored locally | Same privacy rule as guest names |
 | 2026-10-30 | recovery | v1: structure only (no names/owners); every op re-validated and ranked by the engine | AI proposals can't shorten below minimum, drop required segments or touch locked ones |
 | 2026-10-30 | invites | v1: `{date}`/`{time}` placeholders filled client-side; group specifics chosen by code | Dates/times are facts the app owns |
+| 2026-10-31 | all | v2: thinking disabled (`thinkingBudget: 0`), proxy timeout 15 s → 25 s | Live key: every task hit the 15 s limit on a busy flash model; with thinking off, intakeNext/vendorQuestions/helperBrief all return valid JSON |
 
 > These v1 entries are design decisions verified with mocked Gemini responses. Add rows with real
 > results after running the tasks against a live key (see docs/PROGRESS.md "Needs human").

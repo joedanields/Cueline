@@ -1,7 +1,21 @@
-import type { BudgetCategory, BudgetLine, Money, MoneySource, PriorityWeights } from '../shared/schemas';
+import type {
+  BudgetCategory,
+  BudgetLine,
+  Money,
+  MoneySource,
+  PriorityWeights,
+} from '../shared/schemas';
 import { CATEGORY_BASE_SHARE, CATEGORY_WEIGHT, CONTINGENCY_PERCENT } from './constants';
 
-export const BUDGET_CATEGORIES: BudgetCategory[] = ['venue', 'food', 'decor', 'entertainment', 'photos', 'rentals', 'misc'];
+export const BUDGET_CATEGORIES: BudgetCategory[] = [
+  'venue',
+  'food',
+  'decor',
+  'entertainment',
+  'photos',
+  'rentals',
+  'misc',
+];
 
 /** Signed money for derived values (remaining can go negative when over budget). */
 export type SignedMoney = { amount: number; currency: string };
@@ -18,8 +32,13 @@ export type BudgetSummary = {
  * A line's total in minor units. Per-guest lines store a unit price × ceil(expected headcount).
  * @example lineTotal({ amount: { amount: 900, currency: 'INR' }, perGuest: true }, 10.5) // 9900
  */
-export function lineTotal(line: Pick<BudgetLine, 'amount' | 'perGuest'>, expectedHeadcount: number): number {
-  return line.perGuest ? line.amount.amount * Math.ceil(Math.max(0, expectedHeadcount)) : line.amount.amount;
+export function lineTotal(
+  line: Pick<BudgetLine, 'amount' | 'perGuest'>,
+  expectedHeadcount: number,
+): number {
+  return line.perGuest
+    ? line.amount.amount * Math.ceil(Math.max(0, expectedHeadcount))
+    : line.amount.amount;
 }
 
 /**
@@ -32,7 +51,9 @@ export function splitByScores(total: number, scores: number[]): number[] {
   const raw = scores.map((s) => (total * s) / sum);
   const parts = raw.map(Math.floor);
   let left = total - parts.reduce((a, b) => a + b, 0);
-  const order = raw.map((r, i) => ({ i, frac: r - Math.floor(r) })).sort((a, b) => b.frac - a.frac || a.i - b.i);
+  const order = raw
+    .map((r, i) => ({ i, frac: r - Math.floor(r) }))
+    .sort((a, b) => b.frac - a.frac || a.i - b.i);
   for (const { i } of order) {
     if (left <= 0) break;
     parts[i] = (parts[i] ?? 0) + 1;
@@ -47,12 +68,19 @@ export function splitByScores(total: number, scores: number[]): number[] {
  * then by base share × weight. A weight of 0 gives that category no estimate.
  * @example allocateBudget({ amount: 100000, currency: 'INR' }, weights, [], 50)
  */
-export function allocateBudget(total: Money, weights: PriorityWeights, lines: BudgetLine[], expectedHeadcount: number): BudgetLine[] {
+export function allocateBudget(
+  total: Money,
+  weights: PriorityWeights,
+  lines: BudgetLine[],
+  expectedHeadcount: number,
+): BudgetLine[] {
   const locked = lines.filter((l) => l.source !== 'estimate');
   const lockedSum = locked.reduce((n, l) => n + lineTotal(l, expectedHeadcount), 0);
   const pool = Math.max(0, total.amount - lockedSum);
   const contingency = Math.floor((pool * CONTINGENCY_PERCENT) / 100);
-  const weighted = BUDGET_CATEGORIES.filter((c): c is Exclude<BudgetCategory, 'misc'> => c !== 'misc');
+  const weighted = BUDGET_CATEGORIES.filter(
+    (c): c is Exclude<BudgetCategory, 'misc'> => c !== 'misc',
+  );
   const scores = weighted.map((c) => CATEGORY_BASE_SHARE[c] * weights[CATEGORY_WEIGHT[c]]);
   const anyScore = scores.some((s) => s > 0);
   const parts = splitByScores(pool - contingency, scores);
@@ -60,11 +88,21 @@ export function allocateBudget(total: Money, weights: PriorityWeights, lines: Bu
   const miscAmount = anyScore ? contingency : pool;
 
   const estimates: BudgetLine[] = weighted.map((category, i) => ({
-    id: `b_est_${category}`, category, label: `${capitalize(category)} (estimate)`,
-    amount: { amount: parts[i] ?? 0, currency: total.currency }, source: 'estimate' as const, perGuest: false,
+    id: `b_est_${category}`,
+    category,
+    label: `${capitalize(category)} (estimate)`,
+    amount: { amount: parts[i] ?? 0, currency: total.currency },
+    source: 'estimate' as const,
+    perGuest: false,
   }));
-  estimates.push({ id: 'b_est_misc', category: 'misc', label: anyScore ? 'Contingency (estimate)' : 'Unallocated',
-    amount: { amount: miscAmount, currency: total.currency }, source: 'estimate', perGuest: false });
+  estimates.push({
+    id: 'b_est_misc',
+    category: 'misc',
+    label: anyScore ? 'Contingency (estimate)' : 'Unallocated',
+    amount: { amount: miscAmount, currency: total.currency },
+    source: 'estimate',
+    perGuest: false,
+  });
   return [...locked, ...estimates.filter((l) => l.amount.amount > 0)];
 }
 
@@ -72,10 +110,17 @@ export function allocateBudget(total: Money, weights: PriorityWeights, lines: Bu
  * Totals, remaining, per-guest cost and per-category breakdown (with which sources contributed).
  * @example summarizeBudget(event.budget, lines, 50).remaining.amount
  */
-export function summarizeBudget(total: Money, lines: BudgetLine[], expectedHeadcount: number): BudgetSummary {
+export function summarizeBudget(
+  total: Money,
+  lines: BudgetLine[],
+  expectedHeadcount: number,
+): BudgetSummary {
   const currency = total.currency;
   const byCategory = Object.fromEntries(
-    BUDGET_CATEGORIES.map((c) => [c, { amount: { amount: 0, currency }, sources: [] as MoneySource[] }]),
+    BUDGET_CATEGORIES.map((c) => [
+      c,
+      { amount: { amount: 0, currency }, sources: [] as MoneySource[] },
+    ]),
   ) as BudgetSummary['byCategory'];
   let allocated = 0;
   for (const line of lines) {

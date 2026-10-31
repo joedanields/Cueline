@@ -22,20 +22,61 @@ export function ManualAddForm() {
       onSubmit={(e) => {
         e.preventDefault();
         if (!name.trim()) return setError('Enter a name.');
-        addGuests([{ id: newId('g'), name: name.trim().slice(0, 80), ageBand, dietary: [], mobility: 'none', sensory: 'none',
-          travel: 'local', role: 'guest', rsvp, confidence: {}, reviewed: true }]);
+        addGuests([
+          {
+            id: newId('g'),
+            name: name.trim().slice(0, 80),
+            ageBand,
+            dietary: [],
+            mobility: 'none',
+            sensory: 'none',
+            travel: 'local',
+            role: 'guest',
+            rsvp,
+            confidence: {},
+            reviewed: true,
+          },
+        ]);
         announce(`Added ${name.trim()}.`);
         setName('');
         setError(undefined);
       }}
     >
-      <h2 id="manual-heading" className="sm:col-span-4">Add one guest</h2>
-      <TextField id="manual-name" label="Name" value={name} maxLength={80} error={error} autoComplete="off" onChange={(e) => setName(e.target.value)} />
-      <SelectField id="manual-age" label="Age band" value={ageBand} onChange={(e) => setAgeBand(AgeBand.parse(e.target.value))}>
-        {AgeBand.options.map((a) => <option key={a} value={a}>{a}</option>)}
+      <h2 id="manual-heading" className="sm:col-span-4">
+        Add one guest
+      </h2>
+      <TextField
+        id="manual-name"
+        label="Name"
+        value={name}
+        maxLength={80}
+        error={error}
+        autoComplete="off"
+        onChange={(e) => setName(e.target.value)}
+      />
+      <SelectField
+        id="manual-age"
+        label="Age band"
+        value={ageBand}
+        onChange={(e) => setAgeBand(AgeBand.parse(e.target.value))}
+      >
+        {AgeBand.options.map((a) => (
+          <option key={a} value={a}>
+            {a}
+          </option>
+        ))}
       </SelectField>
-      <SelectField id="manual-rsvp" label="RSVP" value={rsvp} onChange={(e) => setRsvp(Rsvp.parse(e.target.value))}>
-        {Rsvp.options.map((r) => <option key={r} value={r}>{r}</option>)}
+      <SelectField
+        id="manual-rsvp"
+        label="RSVP"
+        value={rsvp}
+        onChange={(e) => setRsvp(Rsvp.parse(e.target.value))}
+      >
+        {Rsvp.options.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
       </SelectField>
       <Button type="submit">Add guest</Button>
     </form>

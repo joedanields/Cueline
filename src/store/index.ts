@@ -6,7 +6,13 @@ import { cacheClear } from '../ai/cache';
 import { allocateBudget } from '../engine/budget';
 import { computeHeadcount } from '../engine/rsvp';
 import { useToastStore } from './toastStore';
-import { CORRUPT_MESSAGE, STORAGE_KEY, mergePersisted, pickPersisted, safeStorage } from './persistence';
+import {
+  CORRUPT_MESSAGE,
+  STORAGE_KEY,
+  mergePersisted,
+  pickPersisted,
+  safeStorage,
+} from './persistence';
 import type { StoreState } from './types';
 import { createPlanSlice } from './slices/planSlice';
 import { createGuestSlice } from './slices/guestSlice';
@@ -34,16 +40,32 @@ export const useStore = create<StoreState>()(
       ...createVersionSlice(set, get, api),
       confirmEvent: (event) => {
         const { event: prev, budget, guests, maybeProbability } = get();
-        const changed = !prev || prev.budget.amount !== event.budget.amount || prev.budget.currency !== event.budget.currency ||
+        const changed =
+          !prev ||
+          prev.budget.amount !== event.budget.amount ||
+          prev.budget.currency !== event.budget.currency ||
           JSON.stringify(prev.weights) !== JSON.stringify(event.weights);
         const expected = computeHeadcount(guests, maybeProbability).expected;
-        set({ event, budget: changed || budget.length === 0 ? allocateBudget(event.budget, event.weights, budget, expected) : budget });
+        set({
+          event,
+          budget:
+            changed || budget.length === 0
+              ? allocateBudget(event.budget, event.weights, budget, expected)
+              : budget,
+        });
         get().snapshot('Event details confirmed');
       },
       reallocateBudget: () => {
         const { event, budget, guests, maybeProbability } = get();
         if (!event) return;
-        set({ budget: allocateBudget(event.budget, event.weights, budget, computeHeadcount(guests, maybeProbability).expected) });
+        set({
+          budget: allocateBudget(
+            event.budget,
+            event.weights,
+            budget,
+            computeHeadcount(guests, maybeProbability).expected,
+          ),
+        });
       },
       replaceState: (state) => set({ ...emptyPersistedState(), ...state, changeLog: [] }),
       loadDemo: () => {
@@ -51,7 +73,13 @@ export const useStore = create<StoreState>()(
         get().snapshot('Loaded demo: Grandpa’s 75th');
       },
       deleteAllData: () => {
-        set({ ...emptyPersistedState(), event: undefined, runSheet: undefined, versions: [], changeLog: [] });
+        set({
+          ...emptyPersistedState(),
+          event: undefined,
+          runSheet: undefined,
+          versions: [],
+          changeLog: [],
+        });
         useStore.persist.clearStorage();
         cacheClear(); // AI responses in memory and sessionStorage
       },

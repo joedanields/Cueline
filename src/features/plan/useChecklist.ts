@@ -11,7 +11,11 @@ import { selectChecklistTriggers } from '../../store/selectors';
  * Keep only items for triggers the engine decided apply, and keep "done" ticks for unchanged text.
  * @example mergeChecklist(out, ['venue:outdoor'], existing)
  */
-export function mergeChecklist(out: AiOutput<'checklist'>, triggers: string[], existing: ChecklistItem[]): ChecklistItem[] {
+export function mergeChecklist(
+  out: AiOutput<'checklist'>,
+  triggers: string[],
+  existing: ChecklistItem[],
+): ChecklistItem[] {
   const allowed = new Set(triggers);
   const done = new Set(existing.filter((c) => c.done).map((c) => c.text));
   return out.items
@@ -25,11 +29,19 @@ export function useChecklist() {
   const venueType = useStore((s) => s.event?.venueType ?? 'other');
   const setChecklist = useStore((s) => s.setChecklist);
   const announce = useAnnounce();
-  const ai = useAi('checklist', { loading: 'Writing your accessibility checklist…', success: () => null });
+  const ai = useAi('checklist', {
+    loading: 'Writing your accessibility checklist…',
+    success: () => null,
+  });
 
   const generate = async () => {
     if (triggers.length === 0) return;
-    const out = (await ai.run({ triggers: triggers.slice(0, 20), venueType, outdoor: venueType === 'outdoor' })) ?? fallbackChecklist(triggers);
+    const out =
+      (await ai.run({
+        triggers: triggers.slice(0, 20),
+        venueType,
+        outdoor: venueType === 'outdoor',
+      })) ?? fallbackChecklist(triggers);
     const items = mergeChecklist(out, triggers, useStore.getState().checklist);
     setChecklist(items);
     announce(`Checklist ready: ${items.length} items.`);

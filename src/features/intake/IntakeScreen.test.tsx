@@ -9,8 +9,21 @@ import { validEvent } from '../../../tests/fixtures/state';
 
 type Body = { input: { asked: string[] } };
 const QUESTIONS = [
-  { done: false, field: 'occasion', question: 'What are you celebrating?', inputType: 'text', why: 'Shapes everything.' },
-  { done: false, field: 'venueType', question: 'Where will it be held?', inputType: 'single_choice', options: ['Home'], why: 'Seating.' },
+  {
+    done: false,
+    field: 'occasion',
+    question: 'What are you celebrating?',
+    inputType: 'text',
+    why: 'Shapes everything.',
+  },
+  {
+    done: false,
+    field: 'venueType',
+    question: 'Where will it be held?',
+    inputType: 'single_choice',
+    options: ['Home'],
+    why: 'Seating.',
+  },
   { done: true },
 ];
 
@@ -55,7 +68,10 @@ describe('IntakeScreen', () => {
   });
 
   it('falls back to static questions when the AI fails', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":"upstream"}', { status: 502 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{"error":"upstream"}', { status: 502 })),
+    );
     renderApp('/intake');
     expect(await screen.findByText(/standard questions/i)).toBeVisible();
     expect(screen.getByLabelText('What are you celebrating?')).toBeVisible();
@@ -64,7 +80,10 @@ describe('IntakeScreen', () => {
   });
 
   it('confirms the summary with the keyboard, saving the event and estimate budget lines', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 502 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 502 })),
+    );
     renderApp('/intake');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /skip to the summary/i }));
@@ -77,7 +96,9 @@ describe('IntakeScreen', () => {
     await user.click(within(summary).getByRole('radio', { name: 'Hall' }));
     await user.type(within(summary).getByLabelText('Total budget'), '50000');
     await user.click(within(summary).getByRole('checkbox', { name: 'Lunch' }));
-    within(summary).getByRole('button', { name: /confirm/i }).focus();
+    within(summary)
+      .getByRole('button', { name: /confirm/i })
+      .focus();
     await user.keyboard('{Enter}');
 
     const { event, budget, versions } = useStore.getState();
@@ -91,7 +112,9 @@ describe('IntakeScreen', () => {
     useStore.getState().setEvent(validEvent);
     const fetchMock = mockAi();
     renderApp('/intake');
-    expect(await screen.findByRole('heading', { level: 1, name: /edit event details/i })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /edit event details/i }),
+    ).toBeVisible();
     expect(screen.getByLabelText('Occasion')).toHaveValue('Birthday');
     expect(fetchMock).not.toHaveBeenCalled();
   });

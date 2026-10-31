@@ -22,12 +22,18 @@ export function useGuestImport() {
     snapshot(`Imported ${guests.length} guests`);
     const groups = computeNeedGroups(guests).length;
     const review = guests.reduce((n, g) => n + lowConfidenceFields(g).length, 0);
-    announce(`Added ${guests.length} guests. Found ${groups} need groups, ${review} tags need your review.`);
+    announce(
+      `Added ${guests.length} guests. Found ${groups} need groups, ${review} tags need your review.`,
+    );
   };
 
   const analyse = async (lines: GuestLine[]): Promise<boolean> => {
     const { lines: pseudo, idToName } = pseudonymize(lines);
-    const out = await ai.run({ lines: pseudo, occasion: event?.occasion ?? 'Celebration', culturalContext: event?.culturalContext });
+    const out = await ai.run({
+      lines: pseudo,
+      occasion: event?.occasion ?? 'Celebration',
+      culturalContext: event?.culturalContext,
+    });
     if (!out) return false;
     commit(buildGuestsFromLens(out, idToName));
     return true;

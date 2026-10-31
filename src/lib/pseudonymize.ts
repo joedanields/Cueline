@@ -10,9 +10,45 @@ export type Pseudonymized = { lines: PseudonymizedLine[]; idToName: Map<string, 
 
 // Relationship words carry age/role signal ("Nani", "grandpa") without identifying anyone.
 const KINSHIP = new Set([
-  'grandpa', 'grandma', 'grandfather', 'grandmother', 'nani', 'nana', 'dadi', 'dada', 'ammamma', 'thatha', 'paati',
-  'aunt', 'aunty', 'auntie', 'uncle', 'cousin', 'baby', 'mom', 'mum', 'dad', 'family', 'kids', 'kid', 'son', 'daughter',
-  'wife', 'husband', 'partner', 'friend', 'neighbour', 'neighbor', 'colleague', 'mr', 'mrs', 'ms', 'dr', 'and', '&', 'the',
+  'grandpa',
+  'grandma',
+  'grandfather',
+  'grandmother',
+  'nani',
+  'nana',
+  'dadi',
+  'dada',
+  'ammamma',
+  'thatha',
+  'paati',
+  'aunt',
+  'aunty',
+  'auntie',
+  'uncle',
+  'cousin',
+  'baby',
+  'mom',
+  'mum',
+  'dad',
+  'family',
+  'kids',
+  'kid',
+  'son',
+  'daughter',
+  'wife',
+  'husband',
+  'partner',
+  'friend',
+  'neighbour',
+  'neighbor',
+  'colleague',
+  'mr',
+  'mrs',
+  'ms',
+  'dr',
+  'and',
+  '&',
+  'the',
 ]);
 const SEPARATOR = /\s+[—–-]\s+|[—–:;|(\t,]/;
 const EMAIL = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
@@ -28,7 +64,10 @@ export function splitGuestLine(raw: string): GuestLine {
   const match = SEPARATOR.exec(line);
   if (!match) return { name: line, details: '' };
   const keep = match[0].trim() === '(' ? '(' : '';
-  return { name: line.slice(0, match.index).trim(), details: `${keep}${line.slice(match.index + match[0].length)}`.trim() };
+  return {
+    name: line.slice(0, match.index).trim(),
+    details: `${keep}${line.slice(match.index + match[0].length)}`.trim(),
+  };
 }
 
 /**
@@ -39,7 +78,11 @@ export function maskPii(text: string): string {
   return text.replace(EMAIL, '[email]').replace(LONG_DIGITS, '[number]');
 }
 
-const tokensOf = (name: string) => name.split(/[\s.'’]+/).map((t) => t.trim()).filter(Boolean);
+const tokensOf = (name: string) =>
+  name
+    .split(/[\s.'’]+/)
+    .map((t) => t.trim())
+    .filter(Boolean);
 const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
@@ -73,7 +116,8 @@ export function pseudonymize(guests: GuestLine[]): Pseudonymized {
   registry.sort((a, b) => b.token.length - a.token.length);
   const lines = guests.map((g, i) => {
     let text = maskPii([contexts[i]?.prefix, g.details].filter(Boolean).join(': '));
-    for (const { token, id } of registry) text = text.replace(new RegExp(`\\b${escapeRegExp(token)}\\b`, 'gi'), id);
+    for (const { token, id } of registry)
+      text = text.replace(new RegExp(`\\b${escapeRegExp(token)}\\b`, 'gi'), id);
     return { id: contexts[i]?.id ?? guestCode(i + 1), text: text.slice(0, 200) };
   });
   return { lines, idToName };

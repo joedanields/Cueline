@@ -26,7 +26,9 @@ describe('demo scenario (PRD §5)', () => {
   it('is an outdoor event three weeks out with an indoor backup', () => {
     expect(state.event?.venueType).toBe('outdoor');
     expect(state.event?.notes).toMatch(/backup/i);
-    expect(new Date(state.event?.startsAt ?? '').getTime()).toBeGreaterThan(Date.parse('2030-01-21T00:00:00Z'));
+    expect(new Date(state.event?.startsAt ?? '').getTime()).toBeGreaterThan(
+      Date.parse('2030-01-21T00:00:00Z'),
+    );
   });
 
   it('only references existing tasks and segments', () => {

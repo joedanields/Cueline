@@ -1,3 +1,8 @@
-{ "done": false, "field": "venueType", "question": "Where will it be held?", "inputType": "single_choice",
+{
+  "done": false,
+  "field": "venueType",
+  "question": "Where will it be held?",
+  "inputType": "single_choice",
   "options": ["Home", "Hall", "Outdoor", "Restaurant", "Other"],
-  "why": "Venue type changes seating, accessibility and weather planning." }
+  "why": "Venue type changes seating, accessibility and weather planning."
+}

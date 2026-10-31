@@ -1,2 +1,15 @@
-{ "guests": [{ "id": "Asha", "ageBand": "elder", "dietary": [], "mobility": "none", "sensory": "none",
-  "travel": "local", "role": "guest", "confidence": {} }], "assumptions": [] }
+{
+  "guests": [
+    {
+      "id": "Asha",
+      "ageBand": "elder",
+      "dietary": [],
+      "mobility": "none",
+      "sensory": "none",
+      "travel": "local",
+      "role": "guest",
+      "confidence": {}
+    }
+  ],
+  "assumptions": []
+}

@@ -18,13 +18,28 @@ type Props = {
 };
 
 /** One intake question. Focus moves to its heading when it appears so screen readers read it. */
-export function QuestionCard({ question, number, draft, onChange, onNext, onSkip, onBack, canGoBack, busy }: Props) {
+export function QuestionCard({
+  question,
+  number,
+  draft,
+  onChange,
+  onNext,
+  onSkip,
+  onBack,
+  canGoBack,
+  busy,
+}: Props) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), [question.field]);
 
   return (
     <section aria-labelledby="question-heading" className="card space-y-4">
-      <h2 id="question-heading" ref={headingRef} tabIndex={-1} className="text-base font-semibold text-muted">
+      <h2
+        id="question-heading"
+        ref={headingRef}
+        tabIndex={-1}
+        className="text-base font-semibold text-muted"
+      >
         Question {number} of up to {MAX_QUESTIONS}
       </h2>
       <form
@@ -34,7 +49,14 @@ export function QuestionCard({ question, number, draft, onChange, onNext, onSkip
           onNext();
         }}
       >
-        <FieldInput field={question.field} label={question.question} options={question.options} draft={draft} onChange={onChange} idPrefix="q" />
+        <FieldInput
+          field={question.field}
+          label={question.question}
+          options={question.options}
+          draft={draft}
+          onChange={onChange}
+          idPrefix="q"
+        />
         {question.why ? <p className="text-sm text-muted">Why we ask: {question.why}</p> : null}
         <div className="flex flex-wrap gap-2">
           <Button onClick={onBack} disabled={!canGoBack || busy}>

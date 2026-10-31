@@ -1,6 +1,10 @@
 import type { NeedGroup } from '../../../engine/needs';
 
-type Props = { groups: NeedGroup[]; selected?: string; onSelect: (key: string | undefined) => void };
+type Props = {
+  groups: NeedGroup[];
+  selected?: string;
+  onSelect: (key: string | undefined) => void;
+};
 
 /** Need-group summary ("Seniors · 11"); each chip filters the guest table. */
 export function NeedGroupChips({ groups, selected, onSelect }: Props) {

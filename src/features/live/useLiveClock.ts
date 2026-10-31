@@ -18,5 +18,9 @@ export function useLiveClock(startsAt: string | undefined, durationMin: number) 
 
   const real = startsAt ? Math.floor((wall - Date.parse(startsAt)) / MS_PER_MIN) : -1;
   const rehearsal = real < 0 || real > durationMin;
-  return { now: rehearsal ? simulated : real, rehearsal, setSimulated: (m: number) => setSimulated(Math.max(0, Math.min(durationMin, Math.round(m)))) };
+  return {
+    now: rehearsal ? simulated : real,
+    rehearsal,
+    setSimulated: (m: number) => setSimulated(Math.max(0, Math.min(durationMin, Math.round(m)))),
+  };
 }

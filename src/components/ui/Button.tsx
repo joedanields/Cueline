@@ -18,7 +18,16 @@ const VARIANTS: Record<Variant, string> = {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = 'secondary', busy = false, busyLabel, className = '', children, type = 'button', disabled, ...rest },
+  {
+    variant = 'secondary',
+    busy = false,
+    busyLabel,
+    className = '',
+    children,
+    type = 'button',
+    disabled,
+    ...rest
+  },
   ref,
 ) {
   return (

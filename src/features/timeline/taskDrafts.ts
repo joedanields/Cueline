@@ -21,7 +21,9 @@ export function draftsToTasks(drafts: Draft[]): PrepTask[] {
     category: d.category,
     durationDays: d.durationDays,
     latestStartDaysBefore: d.latestStartDaysBefore,
-    dependsOn: [...new Set(d.dependsOn.filter((k) => keys.has(k) && k !== d.key))].map((k) => `t_${k}`.slice(0, 40)),
+    dependsOn: [...new Set(d.dependsOn.filter((k) => keys.has(k) && k !== d.key))].map((k) =>
+      `t_${k}`.slice(0, 40),
+    ),
     ownerId: d.ownerRole === 'organizer' ? 'organizer' : undefined,
     status: 'todo',
     slipDays: 0,
@@ -31,7 +33,9 @@ export function draftsToTasks(drafts: Draft[]): PrepTask[] {
     const r = topoOrder(tasks);
     if (!('cycle' in r)) break;
     const [from, to] = [r.cycle.at(-1), r.cycle[0]];
-    tasks = tasks.map((t) => (t.id === from ? { ...t, dependsOn: t.dependsOn.filter((d) => d !== to) } : t));
+    tasks = tasks.map((t) =>
+      t.id === from ? { ...t, dependsOn: t.dependsOn.filter((d) => d !== to) } : t,
+    );
   }
   return tasks;
 }
@@ -45,13 +49,21 @@ export type WeekGroup = { label: string; tasks: ScheduledTask[] };
 export function groupByWeek(tasks: ScheduledTask[], eventStartsAt: string): WeekGroup[] {
   const event = new Date(eventStartsAt);
   const groups = new Map<string, ScheduledTask[]>();
-  for (const t of [...tasks].sort((a, b) => a.due.localeCompare(b.due) || a.title.localeCompare(b.title))) {
-    const week = format(startOfWeek(new Date(`${t.due}T00:00:00`), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  for (const t of [...tasks].sort(
+    (a, b) => a.due.localeCompare(b.due) || a.title.localeCompare(b.title),
+  )) {
+    const week = format(
+      startOfWeek(new Date(`${t.due}T00:00:00`), { weekStartsOn: 1 }),
+      'yyyy-MM-dd',
+    );
     groups.set(week, [...(groups.get(week) ?? []), t]);
   }
   return [...groups.entries()].map(([week, list]) => {
     const weeks = Math.floor(differenceInCalendarDays(event, new Date(`${week}T00:00:00`)) / 7);
     const rel = weeks <= 0 ? 'event week' : `${weeks} week${weeks === 1 ? '' : 's'} before`;
-    return { label: `Week of ${format(new Date(`${week}T00:00:00`), 'd MMM')} · ${rel}`, tasks: list };
+    return {
+      label: `Week of ${format(new Date(`${week}T00:00:00`), 'd MMM')} · ${rel}`,
+      tasks: list,
+    };
   });
 }

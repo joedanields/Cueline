@@ -23,9 +23,11 @@ export const useUiStore = create<UiState>()(
       partialize: (s) => ({ shortcutsEnabled: s.shortcutsEnabled }),
       merge: (persisted, current) => ({
         ...current,
-        shortcutsEnabled: typeof (persisted as { shortcutsEnabled?: unknown } | undefined)?.shortcutsEnabled === 'boolean'
-          ? Boolean((persisted as { shortcutsEnabled: boolean }).shortcutsEnabled)
-          : current.shortcutsEnabled,
+        shortcutsEnabled:
+          typeof (persisted as { shortcutsEnabled?: unknown } | undefined)?.shortcutsEnabled ===
+          'boolean'
+            ? Boolean((persisted as { shortcutsEnabled: boolean }).shortcutsEnabled)
+            : current.shortcutsEnabled,
       }),
     },
   ),

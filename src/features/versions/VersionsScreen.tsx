@@ -32,28 +32,62 @@ export default function VersionsScreen() {
   };
 
   return (
-    <Page title="Versions" heading="Version history" intro="Saved automatically when you confirm event details, import guests, draft tasks or run sheets, and apply a recovery. Up to 20 are kept.">
+    <Page
+      title="Versions"
+      heading="Version history"
+      intro="Saved automatically when you confirm event details, import guests, draft tasks or run sheets, and apply a recovery. Up to 20 are kept."
+    >
       <section aria-labelledby="save-heading" className="card flex flex-wrap items-center gap-3">
-        <h2 id="save-heading" className="sr-only">Save a version</h2>
-        <Button onClick={() => { snapshot('Saved by you'); announce('Version saved.'); }}>Save a version now</Button>
+        <h2 id="save-heading" className="sr-only">
+          Save a version
+        </h2>
+        <Button
+          onClick={() => {
+            snapshot('Saved by you');
+            announce('Version saved.');
+          }}
+        >
+          Save a version now
+        </Button>
       </section>
-      {error ? <p role="alert" className="card border-danger"><span aria-hidden="true">⚠ </span>{error}</p> : null}
-      {versions.length === 0 ? <p className="card">No versions yet.</p> : (
+      {error ? (
+        <p role="alert" className="card border-danger">
+          <span aria-hidden="true">⚠ </span>
+          {error}
+        </p>
+      ) : null}
+      {versions.length === 0 ? (
+        <p className="card">No versions yet.</p>
+      ) : (
         <ol className="space-y-2" aria-label="Versions, newest first">
           {versions.map((v) => (
             <li key={v.id} className="card flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="font-semibold">{v.reason}</p>
-                <p className="text-sm text-muted"><time dateTime={v.at}>{format(new Date(v.at), 'd MMM yyyy, HH:mm')}</time></p>
+                <p className="text-sm text-muted">
+                  <time dateTime={v.at}>{format(new Date(v.at), 'd MMM yyyy, HH:mm')}</time>
+                </p>
               </div>
               {confirming === v.id ? (
-                <div className="flex flex-wrap items-center gap-2" role="group" aria-label={`Confirm restoring ${v.reason}`}>
+                <div
+                  className="flex flex-wrap items-center gap-2"
+                  role="group"
+                  aria-label={`Confirm restoring ${v.reason}`}
+                >
                   <span>Replace your current plan with this version?</span>
-                  <Button ref={confirmRef} variant="primary" onClick={() => restore(v.id, v.reason)}>Yes, restore</Button>
+                  <Button
+                    ref={confirmRef}
+                    variant="primary"
+                    onClick={() => restore(v.id, v.reason)}
+                  >
+                    Yes, restore
+                  </Button>
                   <Button onClick={() => setConfirming(undefined)}>Cancel</Button>
                 </div>
               ) : (
-                <Button onClick={() => setConfirming(v.id)}>Restore<span className="sr-only"> “{v.reason}”</span></Button>
+                <Button onClick={() => setConfirming(v.id)}>
+                  Restore<span className="sr-only"> “{v.reason}”</span>
+                </Button>
               )}
             </li>
           ))}

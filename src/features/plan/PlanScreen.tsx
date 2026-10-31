@@ -19,10 +19,18 @@ const TABS = [
 export default function PlanScreen() {
   const hasEvent = useStore((s) => Boolean(s.event));
   return (
-    <Page title="Plan" heading="Needs → Plan" intro="Everything here recalculates instantly from your guests, RSVPs and priorities — no AI involved in the numbers.">
+    <Page
+      title="Plan"
+      heading="Needs → Plan"
+      intro="Everything here recalculates instantly from your guests, RSVPs and priorities — no AI involved in the numbers."
+    >
       {hasEvent ? null : (
         <p className="card">
-          <span aria-hidden="true">ℹ </span>Start with your <Link to="/intake" className="underline">event details</Link> to unlock quantities and budget.
+          <span aria-hidden="true">ℹ </span>Start with your{' '}
+          <Link to="/intake" className="underline">
+            event details
+          </Link>{' '}
+          to unlock quantities and budget.
         </p>
       )}
       <Tabs label="Plan sections" tabs={TABS} />

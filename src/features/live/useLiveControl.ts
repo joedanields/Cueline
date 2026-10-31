@@ -7,7 +7,14 @@ import type { Segment } from '../../shared/schemas';
 import { useStore } from '../../store';
 import { breakAnnouncement, clock, describeBreak, recoveryInput } from './liveLogic';
 
-export type Pending = { delay: number; segments: Segment[]; descriptions: string[]; options: RankedRecovery[]; source: 'ai' | 'quick'; loading: boolean };
+export type Pending = {
+  delay: number;
+  segments: Segment[];
+  descriptions: string[];
+  options: RankedRecovery[];
+  source: 'ai' | 'quick';
+  loading: boolean;
+};
 
 const isOnline = () => typeof navigator === 'undefined' || navigator.onLine !== false;
 
@@ -20,7 +27,9 @@ export function useLiveControl(now: number) {
     const sheet = useStore.getState().runSheet;
     if (!sheet) return;
     const entry = { at: new Date().toISOString(), minutes: delay, note: note.slice(0, 200) };
-    useStore.getState().setRunSheet({ ...sheet, segments, delayLog: [...sheet.delayLog, entry].slice(-200) });
+    useStore
+      .getState()
+      .setRunSheet({ ...sheet, segments, delayLog: [...sheet.delayLog, entry].slice(-200) });
   };
 
   const delay = async (minutes: number) => {
@@ -35,27 +44,65 @@ export function useLiveControl(now: number) {
       const c = sheet.constraints.find((x) => x.id === b.constraintId);
       return c ? describeBreak(c, shift.segments, event.startsAt, b.byMin) : '';
     });
-    const ctx = { segments: shift.segments, constraints: sheet.constraints, weights: event.weights, breaks: shift.breaks };
+    const ctx = {
+      segments: shift.segments,
+      constraints: sheet.constraints,
+      weights: event.weights,
+      breaks: shift.breaks,
+    };
     const quick = deterministicRecovery(ctx);
     const quickOptions = quick.ok ? [quick.option] : [];
-    setPending({ delay: minutes, segments: shift.segments, descriptions, options: quickOptions, source: 'quick', loading: isOnline() });
-    if (!isOnline()) return announce(breakAnnouncement(descriptions, quickOptions.length), 'assertive');
+    setPending({
+      delay: minutes,
+      segments: shift.segments,
+      descriptions,
+      options: quickOptions,
+      source: 'quick',
+      loading: isOnline(),
+    });
+    if (!isOnline())
+      return announce(breakAnnouncement(descriptions, quickOptions.length), 'assertive');
 
-    const ai = await callAi('recovery', recoveryInput(shift.segments, shift.breaks, sheet.constraints, event.weights, now));
+    const ai = await callAi(
+      'recovery',
+      recoveryInput(shift.segments, shift.breaks, sheet.constraints, event.weights, now),
+    );
     const ranked = ai.ok ? rankRecovery(ai.data.options, ctx) : [];
     const options = ranked.length ? ranked : quickOptions;
-    setPending({ delay: minutes, segments: shift.segments, descriptions, options, source: ranked.length ? 'ai' : 'quick', loading: false });
+    setPending({
+      delay: minutes,
+      segments: shift.segments,
+      descriptions,
+      options,
+      source: ranked.length ? 'ai' : 'quick',
+      loading: false,
+    });
     announce(breakAnnouncement(descriptions, options.length), 'assertive');
   };
 
   const apply = (option: RankedRecovery | undefined) => {
     if (!pending) return;
     const segments = option ? option.segments : pending.segments;
-    commit(segments, pending.delay, option ? `Running ${pending.delay} min late — ${option.label}` : `Running ${pending.delay} min late — kept as is`);
-    useStore.getState().snapshot(option ? `Recovery applied: ${option.label}` : `Delay of ${pending.delay} min applied`);
+    commit(
+      segments,
+      pending.delay,
+      option
+        ? `Running ${pending.delay} min late — ${option.label}`
+        : `Running ${pending.delay} min late — kept as is`,
+    );
+    useStore
+      .getState()
+      .snapshot(
+        option ? `Recovery applied: ${option.label}` : `Delay of ${pending.delay} min applied`,
+      );
     const startsAt = useStore.getState().event?.startsAt ?? '';
-    const next = segments.filter((s) => s.status === 'upcoming').sort((a, b) => a.offsetMin - b.offsetMin)[0];
-    announce(`${option ? `Applied: ${option.label}.` : 'Delay applied without changes.'}${next ? ` Next: ${next.title} at ${clock(startsAt, next.offsetMin)}.` : ''} Cue cards updated.`, 'assertive');
+    const next = segments
+      .filter((s) => s.status === 'upcoming')
+      .sort((a, b) => a.offsetMin - b.offsetMin)[0];
+    announce(
+      `${option ? `Applied: ${option.label}.` : 'Delay applied without changes.'}${next ? ` Next: ${next.title} at ${clock(startsAt, next.offsetMin)}.` : ''} Cue cards updated.`,
+      'assertive',
+    );
     setPending(undefined);
   };
 

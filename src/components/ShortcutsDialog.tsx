@@ -24,19 +24,27 @@ export function ShortcutsDialog() {
         <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
         Single-key shortcuts on
       </label>
-      <p className="mb-3 text-sm text-muted">Shortcuts never fire while you are typing in a field.</p>
+      <p className="mb-3 text-sm text-muted">
+        Shortcuts never fire while you are typing in a field.
+      </p>
       <table className="w-full text-left">
         <caption className="sr-only">Keyboard shortcuts</caption>
         <thead>
           <tr>
-            <th scope="col" className="p-2">Keys</th>
-            <th scope="col" className="p-2">Action</th>
+            <th scope="col" className="p-2">
+              Keys
+            </th>
+            <th scope="col" className="p-2">
+              Action
+            </th>
           </tr>
         </thead>
         <tbody>
           {SHORTCUTS.map(([keys, action]) => (
             <tr key={keys} className="border-t border-line/40">
-              <td className="p-2"><kbd className="rounded border border-line px-1">{keys}</kbd></td>
+              <td className="p-2">
+                <kbd className="rounded border border-line px-1">{keys}</kbd>
+              </td>
               <td className="p-2">{action}</td>
             </tr>
           ))}

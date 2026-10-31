@@ -57,21 +57,43 @@ export function validateRunSheet(runSheet: RunSheet, eventDurationMin: number): 
   const out: Violation[] = [];
   segs.forEach((a, i) => {
     if (a.minDurationMin > a.durationMin) {
-      out.push({ segmentId: a.id, kind: 'min_duration', severity: 'hard', message: `Shorter than its minimum of ${a.minDurationMin} min.` });
+      out.push({
+        segmentId: a.id,
+        kind: 'min_duration',
+        severity: 'hard',
+        message: `Shorter than its minimum of ${a.minDurationMin} min.`,
+      });
     }
     if (end(a) > eventDurationMin) {
-      out.push({ segmentId: a.id, kind: 'overrun', severity: 'soft', message: `Ends ${end(a) - eventDurationMin} min after the event's planned end.` });
+      out.push({
+        segmentId: a.id,
+        kind: 'overrun',
+        severity: 'soft',
+        message: `Ends ${end(a) - eventDurationMin} min after the event's planned end.`,
+      });
     }
     for (const b of segs.slice(i + 1)) {
       if (a.ownerId && a.ownerId === b.ownerId && a.offsetMin < end(b) && b.offsetMin < end(a)) {
-        out.push({ segmentId: b.id, kind: 'overlap', severity: 'hard', message: `Same person also runs “${a.title}” at this time.` });
+        out.push({
+          segmentId: b.id,
+          kind: 'overlap',
+          severity: 'hard',
+          message: `Same person also runs “${a.title}” at this time.`,
+        });
       }
     }
   });
   const byId = new Map(runSheet.segments.map((s) => [s.id, s]));
   for (const c of runSheet.constraints) {
     const by = constraintBreak(c, byId);
-    if (by > 0) out.push({ segmentId: c.segmentId, kind: 'constraint', severity: c.severity, constraintId: c.id, message: `${c.reason} — misses by ${by} min.` });
+    if (by > 0)
+      out.push({
+        segmentId: c.segmentId,
+        kind: 'constraint',
+        severity: c.severity,
+        constraintId: c.id,
+        message: `${c.reason} — misses by ${by} min.`,
+      });
   }
   return out;
 }
@@ -90,7 +112,9 @@ export function repack(segments: Segment[]): Segment[] {
     newOffset.set(s.id, cursor);
     cursor += s.durationMin;
   }
-  return segments.map((s) => (newOffset.has(s.id) ? { ...s, offsetMin: newOffset.get(s.id) ?? s.offsetMin } : s));
+  return segments.map((s) =>
+    newOffset.has(s.id) ? { ...s, offsetMin: newOffset.get(s.id) ?? s.offsetMin } : s,
+  );
 }
 
 /**

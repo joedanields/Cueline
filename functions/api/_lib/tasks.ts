@@ -13,7 +13,7 @@ export type TaskDefinition = {
   timeoutMs: number;
 };
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 25_000; // structured output from a busy flash model can take 10–20 s
 const RECOVERY_TIMEOUT_MS = 8_000; // live mode: a fast deterministic fallback beats a slow answer
 
 type Tuning = { maxOutputTokens: number; temperature: number; timeoutMs?: number };

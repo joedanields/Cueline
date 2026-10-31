@@ -9,7 +9,8 @@ import { toCsv } from '../../lib/csv';
 import { downloadText } from '../../lib/download';
 import { InvitesPanel } from './components/InvitesPanel';
 
-const linkClass = 'inline-flex min-h-[44px] items-center rounded border-2 border-line px-4 underline';
+const linkClass =
+  'inline-flex min-h-[44px] items-center rounded border-2 border-line px-4 underline';
 
 export default function ExportScreen() {
   const event = useStore((s) => s.event);
@@ -20,33 +21,75 @@ export default function ExportScreen() {
 
   const ics = () => {
     if (!event || !schedule?.ok) return;
-    downloadText('cueline-deadlines.ics', buildIcs(event, schedule.tasks, new Date()), 'text/calendar');
+    downloadText(
+      'cueline-deadlines.ics',
+      buildIcs(event, schedule.tasks, new Date()),
+      'text/calendar',
+    );
     announce('Calendar file with prep deadlines downloaded.');
   };
   const csv = () => {
-    const rows = [['Name', 'Age band', 'Diet', 'Mobility', 'Sensory', 'Travel', 'Role', 'RSVP', 'Note'],
-      ...guests.map((g) => [g.name, g.ageBand, g.dietary.join('; '), g.mobility, g.sensory, g.travel, g.role, g.rsvp, g.note])];
+    const rows = [
+      ['Name', 'Age band', 'Diet', 'Mobility', 'Sensory', 'Travel', 'Role', 'RSVP', 'Note'],
+      ...guests.map((g) => [
+        g.name,
+        g.ageBand,
+        g.dietary.join('; '),
+        g.mobility,
+        g.sensory,
+        g.travel,
+        g.role,
+        g.rsvp,
+        g.note,
+      ]),
+    ];
     downloadText('cueline-guests.csv', toCsv(rows), 'text/csv');
     announce('Guest list downloaded.');
   };
 
   return (
-    <Page title="Export" heading="Messages & export" intro="Everything you need on paper or in your calendar. Files are created in your browser — nothing is uploaded.">
-      {event ? <InvitesPanel /> : <p className="card">Add <Link to="/intake" className="underline">event details</Link> to write invitations.</p>}
+    <Page
+      title="Export"
+      heading="Messages & export"
+      intro="Everything you need on paper or in your calendar. Files are created in your browser — nothing is uploaded."
+    >
+      {event ? (
+        <InvitesPanel />
+      ) : (
+        <p className="card">
+          Add{' '}
+          <Link to="/intake" className="underline">
+            event details
+          </Link>{' '}
+          to write invitations.
+        </p>
+      )}
       <section aria-labelledby="print-heading" className="card space-y-3">
         <h2 id="print-heading">Print</h2>
-        <p className="text-muted">Black on white, large type. Use your browser’s print dialog (or “Save as PDF”).</p>
+        <p className="text-muted">
+          Black on white, large type. Use your browser’s print dialog (or “Save as PDF”).
+        </p>
         <div className="flex flex-wrap gap-2">
-          <Link className={linkClass} to="/print/runsheet">Printable run sheet</Link>
-          <Link className={linkClass} to="/print/cues">Printable cue sheets (per person)</Link>
-          <Link className={linkClass} to="/print/cards">Printable helper cards</Link>
+          <Link className={linkClass} to="/print/runsheet">
+            Printable run sheet
+          </Link>
+          <Link className={linkClass} to="/print/cues">
+            Printable cue sheets (per person)
+          </Link>
+          <Link className={linkClass} to="/print/cards">
+            Printable helper cards
+          </Link>
         </div>
       </section>
       <section aria-labelledby="files-heading" className="card space-y-3">
         <h2 id="files-heading">Files</h2>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={ics} disabled={!schedule?.ok || taskCount === 0}>Download prep deadlines (.ics)</Button>
-          <Button onClick={csv} disabled={guests.length === 0}>Download guest list (.csv)</Button>
+          <Button onClick={ics} disabled={!schedule?.ok || taskCount === 0}>
+            Download prep deadlines (.ics)
+          </Button>
+          <Button onClick={csv} disabled={guests.length === 0}>
+            Download guest list (.csv)
+          </Button>
         </div>
       </section>
     </Page>

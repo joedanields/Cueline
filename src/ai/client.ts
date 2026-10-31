@@ -1,13 +1,20 @@
 import { AiSchemas, type AiInput, type AiOutput, type AiTaskName } from '../shared/aiTasks';
 import { cacheGet, cacheKey, cacheSet } from './cache';
 
-export type AiErrorKind = 'network' | 'timeout' | 'rate_limited' | 'invalid_response' | 'upstream' | 'bad_request' | 'aborted';
+export type AiErrorKind =
+  | 'network'
+  | 'timeout'
+  | 'rate_limited'
+  | 'invalid_response'
+  | 'upstream'
+  | 'bad_request'
+  | 'aborted';
 export type AiError = { kind: AiErrorKind; message: string };
 export type Result<T, E> = { ok: true; data: T; cached: boolean } | { ok: false; error: E };
 
 export const AI_ENDPOINT = '/api/ai';
-const CLIENT_TIMEOUT_MS = 20_000; // proxy gives up at 15 s; allow for network overhead
-const RECOVERY_TIMEOUT_MS = 10_000;
+const CLIENT_TIMEOUT_MS = 55_000; // proxy may make two 25 s attempts; allow for network overhead
+const RECOVERY_TIMEOUT_MS = 18_000; // proxy may make two 8 s attempts
 
 const MESSAGES: Record<AiErrorKind, string> = {
   network: 'Couldn’t reach the assistant. Check your connection and try again.',
@@ -19,7 +26,10 @@ const MESSAGES: Record<AiErrorKind, string> = {
   aborted: 'Request cancelled.',
 };
 
-const error = (kind: AiErrorKind): { ok: false; error: AiError } => ({ ok: false, error: { kind, message: MESSAGES[kind] } });
+const error = (kind: AiErrorKind): { ok: false; error: AiError } => ({
+  ok: false,
+  error: { kind, message: MESSAGES[kind] },
+});
 
 function kindForStatus(status: number, code: unknown): AiErrorKind {
   if (status === 429) return 'rate_limited';
@@ -35,7 +45,11 @@ type CallOptions = { signal?: AbortSignal; timeoutMs?: number; cache?: boolean }
  * Call a named AI task through the proxy. Input is validated before sending; the response is
  * validated with the task's output schema before it is returned. Never throws.
  */
-export async function callAi<T extends AiTaskName>(task: T, input: AiInput<T>, opts: CallOptions = {}): Promise<Result<AiOutput<T>, AiError>> {
+export async function callAi<T extends AiTaskName>(
+  task: T,
+  input: AiInput<T>,
+  opts: CallOptions = {},
+): Promise<Result<AiOutput<T>, AiError>> {
   const schemas = AiSchemas[task];
   const parsedInput = schemas.input.safeParse(input);
   if (!parsedInput.success) return error('bad_request');
@@ -48,7 +62,10 @@ export async function callAi<T extends AiTaskName>(task: T, input: AiInput<T>, o
   if (opts.signal?.aborted) return error('aborted');
 
   const timeout = new AbortController();
-  const timer = setTimeout(() => timeout.abort(), opts.timeoutMs ?? (task === 'recovery' ? RECOVERY_TIMEOUT_MS : CLIENT_TIMEOUT_MS));
+  const timer = setTimeout(
+    () => timeout.abort(),
+    opts.timeoutMs ?? (task === 'recovery' ? RECOVERY_TIMEOUT_MS : CLIENT_TIMEOUT_MS),
+  );
   const onAbort = () => timeout.abort();
   opts.signal?.addEventListener('abort', onAbort);
   try {
@@ -58,7 +75,9 @@ export async function callAi<T extends AiTaskName>(task: T, input: AiInput<T>, o
       body: JSON.stringify({ task, input: parsedInput.data }),
       signal: timeout.signal,
     });
-    const body = (await res.json().catch(() => undefined)) as { data?: unknown; error?: unknown } | undefined;
+    const body = (await res.json().catch(() => undefined)) as
+      | { data?: unknown; error?: unknown }
+      | undefined;
     if (!res.ok) return error(kindForStatus(res.status, body?.error));
     const output = schemas.output.safeParse(body?.data);
     if (!output.success) return error('invalid_response');

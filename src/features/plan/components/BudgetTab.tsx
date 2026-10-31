@@ -24,37 +24,108 @@ export function BudgetTab() {
   return (
     <div className="space-y-6">
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[['Total budget', fmt(summary.total.amount)], ['Planned', fmt(summary.allocated.amount)], [over ? 'Over budget by' : 'Remaining', fmt(Math.abs(summary.remaining.amount))], ['Per expected guest', fmt(summary.perGuest.amount)]].map(([k, v]) => (
+        {[
+          ['Total budget', fmt(summary.total.amount)],
+          ['Planned', fmt(summary.allocated.amount)],
+          [over ? 'Over budget by' : 'Remaining', fmt(Math.abs(summary.remaining.amount))],
+          ['Per expected guest', fmt(summary.perGuest.amount)],
+        ].map(([k, v]) => (
           <div key={k} className="card">
             <dt className="text-sm text-muted">{k}</dt>
-            <dd className={`text-xl font-bold tabular-nums ${k === 'Over budget by' ? 'text-danger' : ''}`}>{k === 'Over budget by' ? <span aria-hidden="true">⚠ </span> : null}{v}</dd>
+            <dd
+              className={`text-xl font-bold tabular-nums ${k === 'Over budget by' ? 'text-danger' : ''}`}
+            >
+              {k === 'Over budget by' ? <span aria-hidden="true">⚠ </span> : null}
+              {v}
+            </dd>
           </div>
         ))}
       </dl>
-      <p className="text-sm text-muted">AI never sets prices. Estimates are planning assumptions until you log a vendor quote or confirm a cost.</p>
+      <p className="text-sm text-muted">
+        AI never sets prices. Estimates are planning assumptions until you log a vendor quote or
+        confirm a cost.
+      </p>
       <table className="w-full text-left">
         <caption className="text-left font-semibold">By category</caption>
-        <thead><tr><th scope="col" className="p-2">Category</th><th scope="col" className="p-2 text-right">Amount</th><th scope="col" className="p-2">Sources</th></tr></thead>
+        <thead>
+          <tr>
+            <th scope="col" className="p-2">
+              Category
+            </th>
+            <th scope="col" className="p-2 text-right">
+              Amount
+            </th>
+            <th scope="col" className="p-2">
+              Sources
+            </th>
+          </tr>
+        </thead>
         <tbody>
           {BUDGET_CATEGORIES.map((c) => (
             <tr key={c} className="border-t border-line/40">
-              <th scope="row" className="p-2 capitalize">{c}</th>
-              <td className="p-2 text-right tabular-nums">{fmt(summary.byCategory[c].amount.amount)}</td>
-              <td className="flex flex-wrap gap-1 p-2">{summary.byCategory[c].sources.map((s) => <SourceBadge key={s} source={s} />)}</td>
+              <th scope="row" className="p-2 capitalize">
+                {c}
+              </th>
+              <td className="p-2 text-right tabular-nums">
+                {fmt(summary.byCategory[c].amount.amount)}
+              </td>
+              <td className="flex flex-wrap gap-1 p-2">
+                {summary.byCategory[c].sources.map((s) => (
+                  <SourceBadge key={s} source={s} />
+                ))}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => upsert({ id: newId('b'), category: 'misc', label: 'New line', amount: { amount: 0, currency: summary.total.currency }, source: 'estimate', perGuest: false })}>Add a line</Button>
-        <Button onClick={() => { reallocate(); announce('Estimates re-split by your priorities. Quotes and confirmed costs were kept.'); }}>Re-split estimates by priorities</Button>
+        <Button
+          onClick={() =>
+            upsert({
+              id: newId('b'),
+              category: 'misc',
+              label: 'New line',
+              amount: { amount: 0, currency: summary.total.currency },
+              source: 'estimate',
+              perGuest: false,
+            })
+          }
+        >
+          Add a line
+        </Button>
+        <Button
+          onClick={() => {
+            reallocate();
+            announce(
+              'Estimates re-split by your priorities. Quotes and confirmed costs were kept.',
+            );
+          }}
+        >
+          Re-split estimates by priorities
+        </Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[48rem] text-left">
           <caption className="text-left font-semibold">Budget lines</caption>
-          <thead><tr>{['Label', 'Category', 'Amount', 'Line total', 'Source', 'Actions'].map((h) => <th key={h} scope="col" className="p-2">{h}</th>)}</tr></thead>
+          <thead>
+            <tr>
+              {['Label', 'Category', 'Amount', 'Line total', 'Source', 'Actions'].map((h) => (
+                <th key={h} scope="col" className="p-2">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
-            {lines.map((l) => <BudgetLineRow key={l.id} line={l} expected={expected} onChange={upsert} onRemove={remove} />)}
+            {lines.map((l) => (
+              <BudgetLineRow
+                key={l.id}
+                line={l}
+                expected={expected}
+                onChange={upsert}
+                onRemove={remove}
+              />
+            ))}
           </tbody>
         </table>
       </div>

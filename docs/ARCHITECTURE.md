@@ -106,7 +106,7 @@ cueline/
 ### Live delay
 1. Tap "+15 min" → `liveShift(runSheet, now, 15)` → `{ shifted, breaks[] }` (pure)
 2. If `breaks.length === 0` → apply, announce "Schedule shifted by 15 minutes. No conflicts."
-3. Else → `callAi('recovery', { segments, breaks, weights, needGroups })` (timeout 8 s)
+3. Else → `callAi('recovery', { segments, breaks, weights, needGroups })` (timeout 8 s per attempt)
 4. Each option → `validateRecovery()` (pure) → drop invalid → `rankRecovery(weights)` → show
 5. If AI fails/offline → `deterministicRecovery()` → show single option labelled "Quick fix"
 

@@ -23,9 +23,13 @@ export type ScheduleResult =
  * Topological order of task ids, or the ids forming a dependency cycle. Unknown deps are ignored.
  * @example topoOrder([{ id: 'a', dependsOn: ['b'] }, { id: 'b', dependsOn: [] }]) // { order: ['b','a'] }
  */
-export function topoOrder(tasks: Pick<PrepTask, 'id' | 'dependsOn'>[]): { order: string[] } | { cycle: string[] } {
+export function topoOrder(
+  tasks: Pick<PrepTask, 'id' | 'dependsOn'>[],
+): { order: string[] } | { cycle: string[] } {
   const ids = new Set(tasks.map((t) => t.id));
-  const deps = new Map(tasks.map((t) => [t.id, t.dependsOn.filter((d) => ids.has(d) && d !== t.id)]));
+  const deps = new Map(
+    tasks.map((t) => [t.id, t.dependsOn.filter((d) => ids.has(d) && d !== t.id)]),
+  );
   const state = new Map<string, 'visiting' | 'done'>();
   const order: string[] = [];
   const stack: string[] = [];
@@ -63,7 +67,9 @@ export function scheduleTasks(tasks: PrepTask[], eventStartsAt: string, now: Dat
   const eventDay = differenceInCalendarDays(new Date(eventStartsAt), today);
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const dependents = new Map<string, string[]>();
-  for (const t of tasks) for (const d of t.dependsOn) if (byId.has(d)) dependents.set(d, [...(dependents.get(d) ?? []), t.id]);
+  for (const t of tasks)
+    for (const d of t.dependsOn)
+      if (byId.has(d)) dependents.set(d, [...(dependents.get(d) ?? []), t.id]);
 
   // Backward pass (dependents before prereqs): latest finish ≤ dependents' latest start.
   const latestStart = new Map<string, number>();
@@ -81,15 +87,27 @@ export function scheduleTasks(tasks: PrepTask[], eventStartsAt: string, now: Dat
   for (const id of topo.order) {
     const t = byId.get(id) as PrepTask;
     const open = t.dependsOn.filter((d) => byId.get(d) && byId.get(d)?.status !== 'done');
-    const prereqDue = Math.max(-Infinity, ...open.map((d) => (start.get(d) ?? 0) + (byId.get(d)?.durationDays ?? 0)));
-    const prereqEarliest = Math.max(0, ...open.map((d) => (earliest.get(d) ?? 0) + (byId.get(d)?.durationDays ?? 0)));
+    const prereqDue = Math.max(
+      -Infinity,
+      ...open.map((d) => (start.get(d) ?? 0) + (byId.get(d)?.durationDays ?? 0)),
+    );
+    const prereqEarliest = Math.max(
+      0,
+      ...open.map((d) => (earliest.get(d) ?? 0) + (byId.get(d)?.durationDays ?? 0)),
+    );
     start.set(id, Math.max((latestStart.get(id) ?? 0) + t.slipDays, prereqDue));
     earliest.set(id, prereqEarliest + t.slipDays);
   }
   return buildResult(tasks, { today, eventDay, latestStart, start, earliest });
 }
 
-type Passes = { today: Date; eventDay: number; latestStart: Map<string, number>; start: Map<string, number>; earliest: Map<string, number> };
+type Passes = {
+  today: Date;
+  eventDay: number;
+  latestStart: Map<string, number>;
+  start: Map<string, number>;
+  earliest: Map<string, number>;
+};
 
 function buildResult(tasks: PrepTask[], p: Passes): ScheduleResult {
   const byId = new Map(tasks.map((t) => [t.id, t]));
@@ -104,12 +122,24 @@ function buildResult(tasks: PrepTask[], p: Passes): ScheduleResult {
     const done = t.status === 'done';
     const notStarted = t.status === 'todo' || t.status === 'slipped';
     return {
-      ...t, start: iso(s), due: iso(s + t.durationDays), latestStart: iso(ls), slackDays: slack(t),
+      ...t,
+      start: iso(s),
+      due: iso(s + t.durationDays),
+      latestStart: iso(ls),
+      slackDays: slack(t),
       isCritical: !done && slack(t) === minSlack,
       isBlocked: t.dependsOn.some((d) => byId.has(d) && byId.get(d)?.status !== 'done'),
-      isAtRisk: !done && (s > ls || (notStarted && ls < 0) || s + t.durationDays < 0 || s + t.durationDays > p.eventDay),
+      isAtRisk:
+        !done &&
+        (s > ls ||
+          (notStarted && ls < 0) ||
+          s + t.durationDays < 0 ||
+          s + t.durationDays > p.eventDay),
     };
   });
-  const criticalPath = scheduled.filter((t) => t.isCritical).sort((a, b) => a.start.localeCompare(b.start)).map((t) => t.id);
+  const criticalPath = scheduled
+    .filter((t) => t.isCritical)
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .map((t) => t.id);
   return { ok: true, tasks: scheduled, criticalPath };
 }

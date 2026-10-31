@@ -11,7 +11,13 @@ export type Headcount = {
   byStatus: Record<Guest['rsvp'], number>;
 };
 
-const emptyBands = (): Record<AgeBand, number> => ({ infant: 0, child: 0, teen: 0, adult: 0, senior: 0 });
+const emptyBands = (): Record<AgeBand, number> => ({
+  infant: 0,
+  child: 0,
+  teen: 0,
+  adult: 0,
+  senior: 0,
+});
 
 /**
  * Probability that a guest attends given their RSVP. "Invited" (no reply yet) is planned as

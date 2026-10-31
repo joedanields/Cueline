@@ -1,1 +1,14 @@
-{ "tasks": [{ "key": "Book Venue!", "title": "Book", "category": "venue", "durationDays": 2, "latestStartDaysBefore": 20, "dependsOn": [], "ownerRole": "boss" }], "assumptions": [] }
+{
+  "tasks": [
+    {
+      "key": "Book Venue!",
+      "title": "Book",
+      "category": "venue",
+      "durationDays": 2,
+      "latestStartDaysBefore": 20,
+      "dependsOn": [],
+      "ownerRole": "boss"
+    }
+  ],
+  "assumptions": []
+}

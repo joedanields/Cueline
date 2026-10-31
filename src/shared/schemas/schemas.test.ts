@@ -36,13 +36,20 @@ const cases: Case[] = [
     name: 'Money',
     schema: MoneySchema,
     valid: { amount: 1050, currency: 'USD' },
-    invalid: [{ amount: 10.5, currency: 'USD' }, { amount: -1, currency: 'USD' }, { amount: 1, currency: 'usd' }],
+    invalid: [
+      { amount: 10.5, currency: 'USD' },
+      { amount: -1, currency: 'USD' },
+      { amount: 1, currency: 'usd' },
+    ],
   },
   {
     name: 'PriorityWeights',
     schema: PriorityWeightsSchema,
     valid: validEvent.weights,
-    invalid: [{ ...validEvent.weights, food: 6 }, { ...validEvent.weights, decor: 2.5 }],
+    invalid: [
+      { ...validEvent.weights, food: 6 },
+      { ...validEvent.weights, decor: 2.5 },
+    ],
   },
   {
     name: 'Event',
@@ -71,19 +78,28 @@ const cases: Case[] = [
     name: 'BudgetLine',
     schema: BudgetLineSchema,
     valid: validBudgetLine,
-    invalid: [{ ...validBudgetLine, source: 'guess' }, { ...validBudgetLine, category: 'travel' }],
+    invalid: [
+      { ...validBudgetLine, source: 'guess' },
+      { ...validBudgetLine, category: 'travel' },
+    ],
   },
   {
     name: 'Vendor',
     schema: VendorSchema,
     valid: validVendor,
-    invalid: [{ ...validVendor, type: 'wizard' }, { ...validVendor, quotes: [{ status: 'received' }] }],
+    invalid: [
+      { ...validVendor, type: 'wizard' },
+      { ...validVendor, quotes: [{ status: 'received' }] },
+    ],
   },
   {
     name: 'Helper',
     schema: HelperSchema,
     valid: validHelper,
-    invalid: [{ ...validHelper, name: '' }, { ...validHelper, availableFrom: 'soon' }],
+    invalid: [
+      { ...validHelper, name: '' },
+      { ...validHelper, availableFrom: 'soon' },
+    ],
   },
   {
     name: 'PrepTask',
@@ -95,7 +111,10 @@ const cases: Case[] = [
     name: 'GuestConstraint',
     schema: GuestConstraintSchema,
     valid: makeConstraint(),
-    invalid: [{ ...makeConstraint(), kind: 'before' }, { ...makeConstraint(), severity: 'medium' }],
+    invalid: [
+      { ...makeConstraint(), kind: 'before' },
+      { ...makeConstraint(), severity: 'medium' },
+    ],
   },
   {
     name: 'Segment',
@@ -113,7 +132,10 @@ const cases: Case[] = [
     name: 'RecoveryOp',
     schema: RecoveryOpSchema,
     valid: { op: 'shorten', segmentId: 's_1', byMin: 5 },
-    invalid: [{ op: 'shorten', segmentId: 's_1', byMin: 0 }, { op: 'teleport', segmentId: 's_1' }],
+    invalid: [
+      { op: 'shorten', segmentId: 's_1', byMin: 0 },
+      { op: 'teleport', segmentId: 's_1' },
+    ],
   },
   {
     name: 'RecoveryOption',
@@ -131,7 +153,10 @@ const cases: Case[] = [
     name: 'PersistedState',
     schema: PersistedStateSchema,
     valid: { ...emptyPersistedState(), event: validEvent, guests: [makeGuest()] },
-    invalid: [{ ...emptyPersistedState(), schemaVersion: 2 }, { ...emptyPersistedState(), guests: 'none' }],
+    invalid: [
+      { ...emptyPersistedState(), schemaVersion: 2 },
+      { ...emptyPersistedState(), guests: 'none' },
+    ],
   },
 ];
 
@@ -162,6 +187,8 @@ describe('schema defaults', () => {
 
   it('caps persisted collection sizes', () => {
     const guests = Array.from({ length: 501 }, (_, i) => makeGuest({ id: `g_${i}` }));
-    expect(PersistedStateSchema.safeParse({ ...emptyPersistedState(), guests }).success).toBe(false);
+    expect(PersistedStateSchema.safeParse({ ...emptyPersistedState(), guests }).success).toBe(
+      false,
+    );
   });
 });

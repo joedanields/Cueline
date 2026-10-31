@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Page } from '../../components/ui/Page';
 import { Button } from '../../components/ui/Button';
@@ -16,15 +16,20 @@ export default function IntakeScreen() {
   const confirmEvent = useStore((s) => s.confirmEvent);
   const navigate = useNavigate();
   const announce = useAnnounce();
-  const [initial] = useState(() => (event ? draftFromEvent(event, locale()) : emptyDraft(locale())));
-  const flow = useIntakeFlow(initial, Boolean(event));
+  const [initial] = useState(() =>
+    event ? draftFromEvent(event, locale()) : emptyDraft(locale()),
+  );
+  const [editing] = useState(() => Boolean(event));
+  const flow = useIntakeFlow(initial, editing);
   const { start } = flow;
+  const started = useRef(false);
 
   useEffect(() => {
-    if (!event) void start();
-    // Start once on mount; later navigation is driven by answers.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Start once; later navigation is driven by answers, not by re-renders.
+    if (started.current || editing) return;
+    started.current = true;
+    void start();
+  }, [editing, start]);
 
   const busy = flow.status === 'loading';
   return (
@@ -35,7 +40,8 @@ export default function IntakeScreen() {
     >
       {flow.usingFallback ? (
         <p className="card text-sm">
-          <span aria-hidden="true">ℹ </span>The assistant is unavailable, so you’re seeing the standard questions. Everything still works.
+          <span aria-hidden="true">ℹ </span>The assistant is unavailable, so you’re seeing the
+          standard questions. Everything still works.
         </p>
       ) : null}
       {flow.mode === 'asking' && flow.current ? (

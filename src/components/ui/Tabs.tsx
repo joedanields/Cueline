@@ -6,7 +6,15 @@ export type TabDef = { id: string; label: string; render: () => ReactNode };
  * WAI-ARIA tabs: arrow keys move between tabs (automatic activation), Home/End jump,
  * roving tabindex so Tab moves straight into the panel.
  */
-export function Tabs({ label, tabs, initial }: { label: string; tabs: TabDef[]; initial?: string }) {
+export function Tabs({
+  label,
+  tabs,
+  initial,
+}: {
+  label: string;
+  tabs: TabDef[];
+  initial?: string;
+}) {
   const [active, setActive] = useState(initial ?? tabs[0]?.id ?? '');
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
 
@@ -18,7 +26,12 @@ export function Tabs({ label, tabs, initial }: { label: string; tabs: TabDef[]; 
   };
 
   const onKeyDown = (e: KeyboardEvent, index: number) => {
-    const moves: Record<string, number> = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabs.length - 1 };
+    const moves: Record<string, number> = {
+      ArrowRight: index + 1,
+      ArrowLeft: index - 1,
+      Home: 0,
+      End: tabs.length - 1,
+    };
     const target = moves[e.key];
     if (target === undefined) return;
     e.preventDefault();
@@ -28,7 +41,11 @@ export function Tabs({ label, tabs, initial }: { label: string; tabs: TabDef[]; 
   const current = tabs.find((t) => t.id === active) ?? tabs[0];
   return (
     <div className="space-y-4">
-      <div role="tablist" aria-label={label} className="flex flex-wrap gap-1 border-b-2 border-line/40 no-print">
+      <div
+        role="tablist"
+        aria-label={label}
+        className="flex flex-wrap gap-1 border-b-2 border-line/40 no-print"
+      >
         {tabs.map((t, i) => {
           const selected = t.id === current?.id;
           return (
@@ -53,7 +70,13 @@ export function Tabs({ label, tabs, initial }: { label: string; tabs: TabDef[]; 
         })}
       </div>
       {current ? (
-        <div role="tabpanel" id={`panel-${current.id}`} aria-labelledby={`tab-${current.id}`} tabIndex={0} className="focus-visible:outline">
+        <div
+          role="tabpanel"
+          id={`panel-${current.id}`}
+          aria-labelledby={`tab-${current.id}`}
+          tabIndex={0}
+          className="focus-visible:outline"
+        >
           {current.render()}
         </div>
       ) : null}

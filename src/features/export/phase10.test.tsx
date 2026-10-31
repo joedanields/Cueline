@@ -10,11 +10,12 @@ import { csvCell, toCsv } from '../../lib/csv';
 import { fallbackInvite, fillPlaceholders, groupSpecifics } from './inviteLogic';
 
 /** jsdom Blobs lack .text(); FileReader works everywhere. */
-const readBlob = (b: Blob | undefined) => new Promise<string>((resolve) => {
-  const r = new FileReader();
-  r.onload = () => resolve(String(r.result));
-  r.readAsText(b ?? new Blob());
-});
+const readBlob = (b: Blob | undefined) =>
+  new Promise<string>((resolve) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result));
+    r.readAsText(b ?? new Blob());
+  });
 
 beforeEach(() => {
   useStore.getState().deleteAllData();
@@ -34,8 +35,12 @@ describe('export logic', () => {
   });
 
   it('fills invite placeholders locally and picks group specifics by code', () => {
-    expect(fillPlaceholders('{date} at {time}', { startsAt: '2030-06-02T12:30:00' })).toBe('Sunday 2 June at 12:30');
-    expect(groupSpecifics('mobility:wheelchair', 'outdoor')).toContain('Covered backup if the weather turns');
+    expect(fillPlaceholders('{date} at {time}', { startsAt: '2030-06-02T12:30:00' })).toBe(
+      'Sunday 2 June at 12:30',
+    );
+    expect(groupSpecifics('mobility:wheelchair', 'outdoor')).toContain(
+      'Covered backup if the weather turns',
+    );
     expect(groupSpecifics('unknown', 'hall')).toEqual([]);
     expect(fallbackInvite({ title: 'Party' }, ['Ramp'])).toMatch(/For your comfort: Ramp\./);
   });
@@ -52,12 +57,18 @@ describe('VersionsScreen', () => {
     expect(await axe(container)).toHaveNoViolations();
     await user.keyboard('{Enter}');
     expect(useStore.getState().guests).toHaveLength(62);
-    expect(useStore.getState().versions.some((v) => v.reason.startsWith('Before restoring'))).toBe(true);
+    expect(useStore.getState().versions.some((v) => v.reason.startsWith('Before restoring'))).toBe(
+      true,
+    );
     expect(screen.getByTestId('live-polite')).toHaveTextContent(/restored the version/i);
   });
 
   it('refuses a corrupt version with an alert', async () => {
-    useStore.setState({ versions: [{ id: 'ver_bad', at: '2030-01-01T00:00:00Z', reason: 'Broken', snapshot: { nope: true } }] });
+    useStore.setState({
+      versions: [
+        { id: 'ver_bad', at: '2030-01-01T00:00:00Z', reason: 'Broken', snapshot: { nope: true } },
+      ],
+    });
     renderApp('/versions');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /restore “broken”/i }));
@@ -69,7 +80,14 @@ describe('VersionsScreen', () => {
 
 describe('ExportScreen', () => {
   it('writes an invite for a need group with placeholders filled, and falls back to a template', async () => {
-    const fetchMock = vi.fn(async (_u: string, _i?: RequestInit) => new Response(JSON.stringify({ data: { text: 'Join us {date} at {time}! Step-free entry at the side gate.' } })));
+    const fetchMock = vi.fn(
+      async (_u: string, _i?: RequestInit) =>
+        new Response(
+          JSON.stringify({
+            data: { text: 'Join us {date} at {time}! Step-free entry at the side gate.' },
+          }),
+        ),
+    );
     vi.stubGlobal('fetch', fetchMock);
     const { container } = renderApp('/export');
     const user = userEvent.setup();
@@ -82,7 +100,10 @@ describe('ExportScreen', () => {
     expect(sent).not.toMatch(/Sharma|Verma/);
     expect(await axe(container)).toHaveNoViolations();
 
-    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 502 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response('{}', { status: 502 })),
+    );
     await user.selectOptions(screen.getByLabelText('Tone'), 'formal');
     await user.click(screen.getByRole('button', { name: 'Write invitation' }));
     expect(await screen.findByText(/simple template was used/i)).toBeVisible();
@@ -90,8 +111,19 @@ describe('ExportScreen', () => {
 
   it('downloads the .ics and a CSV, created locally', async () => {
     const created: Blob[] = [];
-    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: (b: Blob) => { created.push(b); return 'blob:x'; }, revokeObjectURL: () => undefined }));
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    vi.stubGlobal(
+      'URL',
+      Object.assign(URL, {
+        createObjectURL: (b: Blob) => {
+          created.push(b);
+          return 'blob:x';
+        },
+        revokeObjectURL: () => undefined,
+      }),
+    );
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
     renderApp('/export');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: /prep deadlines/i }));
@@ -106,7 +138,9 @@ describe('ExportScreen', () => {
     expect(await screen.findByRole('table')).toHaveTextContent('Lunch service');
     unmount();
     const cues = renderApp('/print/cues');
-    expect(await screen.findByRole('region', { name: 'Priya' })).toHaveTextContent('Cake cutting and song');
+    expect(await screen.findByRole('region', { name: 'Priya' })).toHaveTextContent(
+      'Cake cutting and song',
+    );
     expect(await axe(cues.container)).toHaveNoViolations();
     cues.unmount();
     renderApp('/print/cards');

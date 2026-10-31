@@ -1,1 +1,5 @@
-{ "options": [{ "label": "Teleport", "rationale": "x", "ops": [{ "op": "teleport", "segmentId": "s_cake" }] }] }
+{
+  "options": [
+    { "label": "Teleport", "rationale": "x", "ops": [{ "op": "teleport", "segmentId": "s_cake" }] }
+  ]
+}
